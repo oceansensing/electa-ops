@@ -1,0 +1,2 @@
+Reboot cause : REBOOT_POWER_DOWN - Power Down/Cold Boot
+Boot number : 66

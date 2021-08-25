@@ -1,0 +1,68 @@
+# infloop.mi
+# 
+# A test mission which tries to do an infinite set of dive-to's and
+# climb-to's.  This reporduces the bug seen in Ashument on
+# apr-26-00
+#
+# 30-Apr-00 tc@DinkumSoftware.com Initial
+# 10-Jul-01 tc@DinkumSoftware.com bug fix, syntax on units
+# 2018-04-03 mbrissette@teledyne.com Added u_gps_min_wait_time, match gps_wait_time
+
+sensor: F_MAX_WORKING_DEPTH(m)   30.0    # ashument values
+sensor: U_GPS_MIN_WAIT_TIME(sec) 30.0    # gps_wait_time must be >= u_gps_min_wait_time
+
+behavior: abend
+    b_arg: overdepth(m)                   1000.0 # <0 disables,
+                                               # clipped to F_MAX_WORKING_DEPTH
+    b_arg: overdepth_sample_time(s)       10.0 # how often to check
+
+                                               # MS_ABORT_OVERTIME
+    b_arg: overtime(s)                   900.0 # < 0 disables
+    b_arg: samedepth_for(s)              120.0 # <0 disables
+    b_arg: samedepth_for_sample_time(s)   30.0 # how often to check
+
+
+
+behavior: surface
+    b_arg: start_when(enum) 6     # 0-immediately, 1-stack idle 2-depth idle 6-when_secs
+    b_arg: end_action(enum) 1     # 0-quit, 1 wait for ^C quit/resume, 2 resume
+    b_arg: report_all(bool) 1     # T->report all sensors once, F->just gps
+    b_arg: gps_wait_time(s) 30    # how long to wait for gps
+    b_arg: keystroke_wait_time(s) 30   # how long to wait for control-C
+    b_arg: when_secs(s)     600   # How long between surfacing
+
+
+behavior: set_heading
+    b_arg: use_heading(bool) 1  # 1 HM_HEADING 2 HM_ROLL, 3 HM_BATTROLL
+    b_arg: heading_value(X) 0.0 # rad, desired heading or roll
+    b_arg: start_when(enum) 0   # 0-immediately, 1-stack idle 2-depth idle
+    b_arg: stop_when(enum)  5   #                1-stack idle 2-depth idle 5-never
+
+
+behavior: yo
+    b_arg: start_when(enum)      2   # 0-immediately, 1-stack idle 2-depth idle
+    b_arg: start_diving(bool)    1   # T-> dive first, F->climb first
+    b_arg: num_half_cycles_to_do(nodim) -1   # Number of dive/climbs to perform, <0 infinite
+    b_arg: d_target_depth(m)      2
+    b_arg: d_target_altitude(m)  -1
+    b_arg: c_target_depth(m)     10
+    b_arg: c_target_altitude(m)  -1
+
+
+behavior: prepare_to_dive
+    b_arg: start_when(enum) 0     # 0-immediately, 1-stack idle 2-depth idle
+    b_arg: wait_time(s)     5     # how long to wait for gps
+
+
+behavior: sensors_in       # Turn all input sensors off
+    # <0 off, 0 as fast as possible, N, sample every N secs
+#    b_arg: c_att_time        0.0 
+#    b_arg: c_pressure_time  -1.0
+#    b_arg: c_alt_time       -1.0  
+#    b_arg: u_battery_time   -1.0
+#    b_arg: u_vacuum_time    -1.0
+#    b_arg: c_profile_on      0.0
+#    b_arg: c_gps_on          0.0  # Special, 1 is on, 0 is off
+
+
+

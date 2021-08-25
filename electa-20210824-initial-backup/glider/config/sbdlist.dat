@@ -1,0 +1,52 @@
+# Written by load_data.c::save_sensors_to_file()
+# Sat Nov  5 20:11:22 2011
+m_present_secs_into_mission
+m_present_time
+m_water_vx
+m_water_vy      
+m_de_oil_vol    60
+c_de_oil_vol    60
+m_ballast_pumped 60
+c_ballast_pumped 60
+m_gps_lat 30
+m_gps_lon 30                 
+m_heading    60
+m_lat    30
+m_lon    30
+m_pitch  30
+m_roll   30
+c_wpt_lat
+c_wpt_lon
+m_battery  60
+m_battpos  30
+m_depth    16
+m_altitude      30
+m_avg_thruster_power 600
+m_thruster_current 600
+c_thruster_on 600
+m_thruster_voltage 600
+m_thruster_power 600
+c_climb_bpump 300
+c_dive_bpump 300
+m_leakdetect_voltage 1800
+m_leakdetect_voltage_forward 1800
+m_digifin_leakdetect_reading 1800
+m_coulomb_amphr_total 1800
+m_coulomb_current 180
+x_surface_active 1800
+
+
+#new hand entered by BA 2/5/2020 satifies all SFMC loaded plots
+m_raw_altitude 		15
+m_water_depth 		30
+m_argos_on 		3600
+m_argos_is_xmitting 	3600
+c_battpos		1200
+m_iridium_on 		3600
+m_iridium_status	3600
+c_pitch     3600
+c_fin       1800
+m_fin       1800
+m_vacuum	   1800
+# 2020-02-18 RC Get vehicle temperature from an active sensor.
+m_veh_temp  1800

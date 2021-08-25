@@ -1,0 +1,12 @@
+#18-may-2011 created for flying deeps at ashumet pond or shallow water - these settings will result in faster pitch motor adjustments 
+
+sensor: u_pitch_correction_time_mult(nodim) 0.1
+sensor: u_pitch_max_delta_battpos(in)        .1
+sensor: u_reqd_depth_at_surface(m)          2.0
+sensor: u_alt_filter_enabled(bool)            0
+sensor: c_dive_bpump(X)			   -220
+sensor: m_water_vx(m/s)  		      0
+sensor: m_water_vy(m/s) 			0
+sensor: u_thruster_burst_freq(hours) 		0		
+  
+
