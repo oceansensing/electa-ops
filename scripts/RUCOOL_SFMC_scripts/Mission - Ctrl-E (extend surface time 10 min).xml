@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+	Date		Author					Comments
+	2/15/2007	dkaragon@marine.rutgers.edu		Created.
+
+	Sends 2 CTRL-E (extend surface) for 10 minutes
+-->
+
+<gliderScript>
+	<initialState name="Type a CTRL-E">
+		<transitions>
+			<transition matchExpression="GPS Location:" toState="Type a CTRL-E 2">
+				<action type="glider" command="Ctrl-E">
+				</action>
+			</transition>
+		</transitions>
+	</initialState>
+
+
+	<state name="Type a CTRL-E 2">
+		<transitions>
+			<transition matchExpression="GPS Location:" toState="DONE">
+				<action type="glider" command="Ctrl-E">
+				</action>
+			</transition>
+		</transitions>
+	</state>
+
+	<state name="DONE">
+		<transitions>
+			<transition matchExpression="GPS Location:" toState="final">
+			</transition>
+		</transitions>
+	</state>
+
+
+	<finalState name="final">
+	</finalState>
+</gliderScript>

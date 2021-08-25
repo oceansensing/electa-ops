@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+	Date			Author					Comments
+	Sep-20-2006 	dkaragon@marine.rutgers.edu		      Created.
+	-->
+	
+<!--
+	Tells glider to immediately dive after surfacing (ctrl-r)  For use with dockserver version 1.2 and up.	
+	 -->
+
+<gliderScript>
+	<initialState name="Type a CTRL-R">
+		<transitions>
+			<transition matchExpression="Hit Control-R to RESUME" toState="Type a CTRL-R">
+				<action type="glider" command="!put u_max_altimeter 9">
+				</action>
+				<action type="glider" command="!put u_alt_reqd_good_in_a_row 1">
+				</action>
+				<action type="glider" command="!put u_min_water_depth 9.5">
+				</action>
+				<action type="glider" command="Ctrl-W">
+				</action>
+				<action type="glider" command="Ctrl-R">
+				</action>
+			</transition>
+		</transitions>
+	</initialState>
+	<finalState name="final">
+	</finalState>
+</gliderScript>
