@@ -1,0 +1,1222 @@
+doco/abort-sequences.txt
+
+This document describes the emergency measures that the Webb Research
+Glider uses to get to the surface in the presence of errors.
+
+19-Mar-02 tc@DinkumSoftware.com Initial
+30-May-02 trcrawford@malvernsoft.com Iridium modem additions
+29-Aug-02 tc@DinkumSoftware.com Added explanation of critical
+                                 and supercritical devices
+08-May-03 tc@DinkumSoftware.com Added description of how aborts in
+                                 lastgasp.mi are handled.
+                                mission ends while still underwater
+                                 no longer generates out of band abort
+
+
+TABLE OF CONTENTS
+
+Types of Aborts
+      Synchronous
+      Out of Band
+      Hardware Generated
+
+What triggers an abort
+      Synchronous
+          behavior abend
+          generic behavior error
+          idle stack
+          device errors
+             how warnings are turned into errors
+             how/when devices are attempted to be put back into service
+             GliderDos command explanations
+                   setdevlimit
+                   setnumwarn
+                   clrdeverrs
+                   use
+              Setting device limits in a mission file
+          misc sources
+
+      Out of Band
+          software in impossible place
+          synchronous abort failed
+          oob_abort behavior (for testing)
+
+      Hardware Generated
+          COP not tickled
+
+Abort Algorithms
+      Synchronous
+      Out of Band
+      Hardware Generated
+
+Sequences/GliderDos/initial.mi&lastgasp.mi
+      Sequences
+      GliderDos
+      initial.mi&lastgasp.mi
+
+TYPES OF ABORTS-----------------------------------------------
+
+There are three types of aborts employed in the glider:
+
+    SYNCHRONOUS
+    OUT OF BAND
+    HARDWARE GENERATED
+
+The first two are triggered and implemented by software.  The
+last is triggered and controlled strictly by the hardware.
+
+There is a one time only drop weight that can be ejected from
+the glider under emergency conditions.  The release mechanism
+is a "burn wire".  The software (or hardware) can direct electric
+current through this wire which eventually "burns" the wire and
+releases the drop weight.  Once the weight has been dropped, the
+glider will never dive again until it is retrieved and the drop
+weight replaced.
+
+The burn time in salt water is about 2 minutes.  The burn time
+in fresh water is about 6 hours.  The glider uses F_TIME_TO_BURN_WIRE
+as an a priori indication of how long the wire will take completely burn
+and cause the weight to drop.
+
+The software abort sequences do their best to get the glider to
+the surface without dropping the weight.  The hardware generated
+abort begins burning the wire immediately.
+
+TYPES OF ABORTS::SYNCHRONOUS **************************************
+
+In a synchronous abort, the assumption is that the glider software
+is intact and in general capable of controlling the vehicle.  Most
+of the code used to fly the glider normally is used in getting the
+glider to the surface.
+
+In a normal mission, the behaviors control all the motor settings.
+Once a synchronous abort has been triggered, the behaviors are
+no longer called.  Instead, code in dyanmic_control.c/abort_the_mission()
+supplies a "hardwired" sequence.  The high level flow during a
+synchronous abort is:
+    dynamic_control()
+    device_scheduler()
+    sensor_processing()
+    log_data()
+    
+This means that all the normal system log files (LOG,MLG,DBD,SBD)
+are active and can be examined after the abort.
+
+In general the abort moves motors/valves to get positive buoyancy
+and turns all the location devices on (argos, gps, etc).  A typical
+printout during a synchronous abort cycle is shown below:
+
+ 62.87 28 behavior ?_-1: abort_the_mission(1): (8)MS_ABORT_OVERTIME
+ 62.90    behavior ?_-1:    depths ini: 6 working: 25 at risk: 186 crush: 200
+ 62.96    behavior ?_-1:    expected time/tries to surface: 457 30
+ 63.01    behavior ?_-1:    max time/tries to go up:  300 20
+ 63.05    behavior ?_-1:    too long: 0, not going up: 0, depth sensor busted:0
+ 63.12    behavior ?_-1:    abort burn time/tries min: 600 40
+ 63.16    behavior ?_-1:    abort burn time/tries max: 3600 240
+ 63.21    behavior ?_-1:    ABOVE WORKING DEPTH
+ 63.26    behavior ?_-1:    drop_the_weight = 0
+If need be... hit a Control-C to forcibly reset or exit
+ 64.57    sensor: m_depth = 7.217768 m
+gps_diag(3)cyc#:49|GPRMC,105802,V,4138.0500,N, 7032.1200,W,0.000,343.9,190302,0.
+3,W|
+
+
+The first line:
+
+ 62.87 28 behavior ?_-1: abort_the_mission(1): (8)MS_ABORT_OVERTIME
+
+gives the mission time (62.87), the cycle number of the mission(28),
+the number of cycles in the abort sequence(1), and the reason for the
+abort (8)MS_ABORT_OVERTIME.  As described in a subsequent paragraph,
+the 8 is the same error code returned to GliderDos.
+
+The user is prompted to manually intervene if required:
+    If need be... hit a Control-C to forcibly reset or exit
+
+The current depth of the glider is reported:
+     64.57    sensor: m_depth = 7.217768 m
+
+The "raw" output of the GPS is reported to aid in relocation:
+
+    gps_diag(3)cyc#:49|GPRMC,105802,V,4138.0500,N, 7032.1200,W, ...
+
+The remainder of the printout is explained in detail in the
+ABORT ALGORITHMS::SYNCHRONOUS section.  
+
+
+The abort completes when the glider detects it is at the surface 
+or the user intervenes with a keystroke.  Normally, the abort
+terminates when the glider detects it is at the surface.  Under
+some conditions, e.g. a mis-calibrated depth sensor, the glider
+could be at the surface without knowing it.  The user should then
+manually terminate the abort by sending a Control-C to the glider.
+That will invoke the same exit procedure used in the out of band
+abort.  See that write-up for an explanation.
+
+When the abort completes by getting the glider to the surface,
+the mission terminates and control is transferred to GliderDos.
+
+A termination code is returned to GliderDos.  This code is displayed
+as part of the GliderDos Prompt and in X_MISSION_STATUS.  An example
+GliderDos Prompt is:
+
+        GliderDos A 8 >
+
+    I     Initial (no mission has been run)
+    N     Normal  (mission ended normally)
+    A     Abnormally (mission ended in synchronous abort)
+
+The meaning of the number can be found in code/command.h.
+In this example, the prompt shown above is what is displayed after the
+synchronous abort sequence in the prior paragraph, e.g. the mission
+aborted because of MS_ABORT_OVERTIME.
+
+The codes below were accurate at the time of this writing,
+but always check code/command.h for the final word.  
+
+    typedef enum {
+    MS_NONE=-3,
+    MS_COMPLETED_ABNORMALLY=-2, 
+    MS_COMPLETED_NORMALLY=-1, 
+    MS_IN_PROGRESS=0,
+
+    MS_ABORT_STACK_IS_IDLE=1,
+    MS_ABORT_HEADING_IS_IDLE=2,
+    MS_ABORT_PITCH_IS_IDLE=3,
+    MS_ABORT_BPUMP_IS_IDLE=4,
+    MS_ABORT_THRENG_IS_IDLE=5,
+
+    MS_ABORT_BEH_ERROR    =6, 
+
+    MS_ABORT_OVERDEPTH    =7,  // behavior abend
+    MS_ABORT_OVERTIME     =8,
+    MS_ABORT_UNDERVOLTS   =9,
+    MS_ABORT_SAMEDEPTH_FOR=10,
+    MS_ABORT_USER_INTERRUPT = 11,
+    MS_ABORT_NOINPUT      =12,
+    MS_ABORT_INFLECTION   =13,
+    MS_ABORT_NO_TICKLE    =14,
+    MS_ABORT_ENG_PRESSURE =15,
+
+    MS_ABORT_DEVICE_ERROR = 16,
+
+    MS_ABORT_DEV_NOT_INSTALLED = 17,
+
+    MS_ABORT_WPT_TOOFAR   = 18  // behavior abend, 
+
+    } mission_status_mode_t ;
+
+The exact meaning of these codes are discussed in the "what triggers an
+abort" section.
+
+TYPES OF ABORTS::OUT OF BAND **************************************
+
+An out of band abort assumes that the glider software itself has
+"misbehaved" and is not reliable.  An out of band abort does
+NOT utilize the higher levels of software control.  It makes use
+of only the "device_scheduler()".  As a result, log files are
+not available.
+
+In general the abort moves motors/valves to get positive buoyancy
+and turns all the location devices on (argos, gps, etc).  The glider's
+best knowledge of it's location is continuously output.  An example
+printout during an out of band abort is shown below:
+
+
+
+~!~  Glider zippy needs help!
+Curr Time: Tue Mar 19 13:49:38 2002 MT:     136
+DR  Location:     0.000 N     0.000 E measured     1e+308 secs ago
+GPS Invalid :  4138.050 N -7032.120 E measured     13.999 secs ago
+GPS Location:     0.000 N     0.000 E measured     1e+308 secs ago
+
+~!~  Hit a control-C to get my attention please
+
+
+are_at_surface:0   are_in_contact:1  M_DEPTH:    16.6
+drop_weight_by_try_count: 0
+time_in_abort_sequence: 30 secs
+device_scheduler() try#:0, this time(s):     30 allowed time(s):    656
+gps_diag(3)cyc#:84|GPRMC,134923,V,4138.0500,N, 7032.1200,W,0.000,344.0,190302,0.
+3,W|
+
+
+    MT: 136 is the seconds into the mission
+
+    DR LOCATION: is the last position as dead reckoned by the
+    glider.
+
+    GPS Invalid: is the last "invalid" location that was output by
+    the gps.
+
+    GPS Location: is the last "valid" location that was output by
+    the gps and accepted by the glider software.  
+
+    gps_diag(3)cyc#:84|GPRMC,134923,V,4138.0500,N, 7032.1200,W, ...
+    is the raw output of the gps device.
+
+    The remainder of the printout is discussed in the
+    ABORT ALGORITHMS section.
+
+The abort is completed only by a user keystroke.  If the user hits
+a control-C, the following dialog is presented:
+
+    Want to reset the system? (Y or N)
+    Want to exit to the operating system?
+    Make sure you know what you are doing before answering Y
+    Want to exit to the operating system? (Y or N)
+
+
+Normally, one should reset the system.  This makes the glider behave
+as if power were initially applied and GliderDos should be running.
+Answering Y causes the following printout:
+
+    Resetting the system NOW!
+    hard_reset() -- resetting the system --
+
+Under some circumstances, it might be necessary to exit directly
+to PicoDos.  This is somewhat risky for the glider, as PicoDos has no
+knowledge of motors and is not controlling them.  This should only
+be done to escape from some sort of infinite startup loop, i.e. a
+bug in autoexec.mi.  This should be avoided while the glider is
+in the water if at all possible.  Answering Y causes the following
+printout:
+
+    Exiting to the Operating System
+      soft return
+    Exiting to operating system NOW
+    C:\>
+
+
+TYPES OF ABORTS::HARDWARE GENERATED **************************************
+
+The glider hardware is capable of autonomously generating an abort
+sequence and getting the glider to the surface by dropping the
+weight.  There is a watchdog circuit in the hardware with a
+time constant of either 2 hours or 16 hours, set by a jumper in
+the hardware:
+
+    install JP22 for 2 hours
+                or
+    install JP21 for 16 hours
+
+    NOTE: only install one of the above!
+
+    NOTE: When this jumper is changed, the value of behavior abend,
+          b_arg: MS_ABORT_NO_TICKLE(s) should be changed to be less
+          than the 2 hour or 16 hour time.  See the section
+          WHAT TRIGGERS AN ABORT...SYNCHRONOUS...BEHAVIOR ABEND
+
+If this watchdog timeout expires, the hardware generates an
+abort sequence.  The software can prevent this timeout from
+expiring by periodically issuing a COP (Computer Operating Properly)
+signal which resets the watchdog circuit.  This is sometimes referred
+to as "tickling" the circuit.
+
+The theory is that as along as the glider is behaving "normally",
+the software keeps "tickling" the watchdog.  If the software crashes,
+the tickles will stop and a hardware abort sequence will eventually
+be generated.
+
+See WHAT TRIGGERS AN ABORT for exact details of when the hardware
+is tickled and ABORT ALGORITHMS for what the hardware actually
+does.
+
+The software is capable of detecting when the hardware has
+generated an abort sequence.  The "watchdog" device driver monitors
+this condition and issues the following printout when a hardware
+abort has been initiated:
+
+  5.81  3 DRIVER_ODDITY:watchdog:0:!!HARDWARE IN EMERGENCY MODE!!
+
+There is also a jumper which can prevent the hardware from
+initiating an abort:
+
+    Install JP20 to defeat hardware timeout
+
+This condition is also monitored and the following printout is issued
+to reminder the user:
+
+
+  8.41  5 DRIVER_ODDITY:watchdog:0:!EMERGENCY defeat jumper IS installed!
+
+
+WHAT TRIGGERS AN ABORT-----------------------------------------------
+
+This section describes what can initiate any of the types of aborts.
+
+WHAT TRIGGERS AN ABORT::SYNCHRONOUS**********************************
+
+One of four general conditions can trigger a synchronous abort:
+
+          BEHAVIOR ABEND
+          GENERIC BEHAVIOR ERROR
+          IDLE STACK
+          DEVICE ERRORS
+          MISC SOURCES
+
+BEHAVIOR ABEND
+
+Most of the synchronous aborts are generated by the behavior abend,
+which is typically placed at the top (highest priority) of the
+behavior stack in the mission (*.mi) file.
+
+This behavior monitors a number of conditions and generates an
+abort if user specified limits are exceeded.  The behavior arguments
+to the abend behavior control which conditions are monitored and
+the reasonable limits.  The complete listing of all the abend
+behavior arguments can be found in code/masterdata.
+
+    MS_ABORT_USER_INTERRUPT The user typed a control-C
+
+    MS_ABORT_OVERDEPTH      The glider is deeper than b_arg: overdepth(m)
+
+    MS_ABORT_OVERTIME       The mission has lasted longer than
+                            b_arg: overtime(sec)
+
+    MS_ABORT_UNDERVOLTS     The battery voltage is less than
+                            b_arg:undervolts(volts)
+
+    MS_ABORT_SAMEDEPTH_FOR  The glider is "stuck", it was at the same
+                            depth for more than b_arg: samedepth_for(sec)
+
+    MS_ABORT_NOINPUT        A required input, e.g. M_DEPTH, wasn't
+                            sampling as it should be, e.g. the device
+                            driver was told to measure depth every X
+                            seconds and there hasn't been a new M_DEPTH
+                            produced in the last 2X seconds.
+
+    MS_ABORT_NO_TICKLE      The hardware watchdog was not "tickled" in the
+                            last b_arg: no_cop_tickle_for(sec) seconds.
+                            This b_arg should be set for something less
+                            than the hardware abort time (2hrs or 16hrs).
+                            This is intended to cause a synchronous abort
+                            and get the glider to the surface before the
+                            hardware abort is initiated and the weight
+                            is dropped.
+
+    MS_ABORT_ENG_PRESSURE   Thermal only. Abort if M_THERMAL_ACC_PRES <
+                            b_arg: eng_pressure_mul(nodim) *M_PRESSURE
+                            This is to prevent the glider going deeper
+                            than the thermal engine can pump out.
+
+    MS_ABORT_WPT_TOOFAR     Abort if M_DIST_TO_WPT > 
+                                  b_arg: max_wpt_distance(m)
+                            This is to prevent a bad gps fix or a bug
+                            in a mission file from sending the glider
+                            out of the intended operating area.
+
+GENERIC BEHAVIOR ERROR
+
+Each of the behaviors may enter an error state which causes
+a synchronous abort:
+
+    MS_ABORT_BEH_ERROR
+
+Different behaviors generate errors for different, typically obscure,
+reasons.  There should be human readable text in the *.MLG which explains
+why the behavior generated an error.
+
+IDLE STACK
+
+Normally the one of the behaviors in the stack command the motors
+that "drive" the glider.  It is an error if any of the required
+motors are not being commanded on every cycle.
+
+    MS_ABORT_STACK_IS_IDLE      Something wasn't commanded
+    MS_ABORT_HEADING_IS_IDLE    No one commanded fin or roll battery
+    MS_ABORT_PITCH_IS_IDLE      No one commanded the pitch battery
+    MS_ABORT_BPUMP_IS_IDLE      No one commanded the buoyancy pump
+    MS_ABORT_THRENG_IS_IDLE     No one commanded the thermal engine
+
+These errors generally indicate a "bug" in a mission file.  When a
+lower priority behavior that drives a given motor completes, a higher
+priority behavior which drives the same motor must be forced to start.
+
+DEVICE ERRORS
+
+This is probably the most common (and complicated) source of
+a synchronous abort:
+
+    MS_ABORT_DEVICE_ERROR
+
+This means that some device driver in the system has generated an
+error.  See the gliderdos "use" command to produce a list of the
+devices and their current status.
+
+Each device driver is capable of producing four times of information
+to the user:
+
+    An oddity          Something odd happened.  The information is logged
+                       and counted, but will never trigger an abort
+                       or cause a device to be "taken out of service".
+
+    A warning          Something serious happened.  The information is
+                       logged and counted.  If enough warnings happen,
+                       it will be treated as an error and trigger an
+                       device out of service and an abort.
+
+    An error           Something bad happened.  This could be a single
+                       incident or an accumulations of warnings.  The
+                       device will be immediately "taken out of service"
+                       and an abort triggered.  During an abort, the
+                       software may try to put a device "back in service".
+                       See the discussion below on how warnings are
+                       turned into errors.
+
+    A permanent error  Something really, really bad happened.  This
+                       is just like an error, except the device will
+                       be permanently taken out of service.  No attempt
+                       will be made to reuse the device until after the
+                       next hardware reset.  Currently, the only 
+                       permanent error is the an overheated indication
+                       from the buoyancy pump.
+
+HOW WARNINGS ARE TURNED INTO ERRORS
+
+The software keeps track of the:
+    The number of warnings generated by the device in the last minute
+    The number of warnings generated by the device in this segment(since
+        the last surfacing)
+    The total number of warnings generated by the device since the
+        the last reset        
+
+The user can specify, on a per device basis:
+    the allowable number of warnings per minute
+    the allowable number of warnings per segment
+
+When these numbers are exceeded during a mission, the warnings
+are turned into an error.  This causes the device to be taken
+out of service and a synchronous abort is triggered.  These
+limits vary from device to device, but typical limits are
+5 warnings/minute and 20 warnings/segment.
+
+The GliderDos USE command will list the error statistics.
+The GliderDos CLRDEVERRS will zero all the error statistics.
+
+The GliderDos SETDEVLIMIT is used to set the allowable 
+number of warnings/minute and warnings/segment used during
+a mission.  The USE statement in a mission file may also specify
+this limit.
+
+It should be noted that different limits are used while in
+GliderDos (as opposed to running a mission).  By default,
+only 2 warnings/minute for any device are allowed in Gliderdos
+before taking the device out of service.  As no mission is running
+while in GliderDos, no abort is initiated.  The user can change the
+limit with the SETNUMWARN command.
+
+The different lower limit in GliderDos is primarily motivated by
+factory setup considerations.  When using a bare electronics board,
+a partially built glider, or an unconfigured glider many, many
+warnings are generated, which floods the screen the messages.  The
+low limit is to quickly take devices out of service in attempt
+to prevent damage to misconfigured devices, preserve the usability
+of the system, and the sanity of the operator.
+
+When any of these limits are specified as -1, they are disabled, i.e.
+setting the warnings/segment to -1 allows an infinite number of warnings
+per segment.  A -1 setting means that the warning will never be turned
+into an error.
+
+
+HOW/WHEN DEVICES ARE ATTEMPTED TO BE PUT BACK INTO SERVICE
+
+When a device is taken out of service, no calls will be made
+to the device driver.  On a per device basis, the user can specify
+the number of times that a device may be put back into service.
+
+The GliderDos SETDEVLIMIT is used to specify the number of times
+a device may be put back into service.  The USE command in a mission
+file may also specify this limit.  A setting of -1, means that
+the device will be put back in service an infinite number of times.
+
+There is an attempt to put an out of service devices back in service:
+    On each cycle of a synchronous abort.
+    On each cycle of an out of band abort.
+    At the end of every mission.
+
+The user may manually take a device in and out of service with
+the GliderDos Use Command.
+
+A CRITICAL device (one which is required to get the glider to the
+surface and/or provide location information) is not taken out of
+service due to a device error during a mission.  It may be taken
+out of service due to a device error during GliderDos.
+
+A SUPERCRITICAL device (one which is required to talk to the glider)
+is never taken out of service due to a device error.
+
+
+GliderDos SETNUMWARN COMMAND EXPLANATION ============================
+
+This command sets the allowable number of warnings in GliderDos
+before a device is taken out of service.
+
+    SETNUMWARN [N]
+
+Without the numeric N argument, this command reports the allowable
+warnings in GliderDos:
+
+    GliderDos I -3 >setnumwarn
+    After 2 warnings, a device will be taken out of service.
+
+If N is specified, the allowable warnings/minute in Gliderdos
+is set to N until the next reset:
+
+    GliderDos I -3 >setnumwarn 50
+    After 50 warnings, a device will be taken out of service.
+
+This limit is ignored for SUPERCRITICAL devices.
+
+GliderDos SETDEVLIMIT COMMAND EXPLANATION ===========================
+
+The SETDEVLIMIT specifies the mission device limits:
+
+     Usage: setdevlimit <device_name> <os> <w/s> <w/m>
+
+     <device_name>    The name of device as listed by "use" command
+     <os>             The number of times it will be put back into service
+     <w/s>            The allowable warnings/segment
+     <w/m>            The allowable warnings/minute
+     
+These limits survive until the next reset.  See the "SETTING DEVICE
+LIMITS IN A MISSION FILE" section on to make permanent changes.
+See the USE command to determine the current limits for all devices.
+
+A setting of -1, means that the limit is disabled.  A -1 means a
+the device will be put back in service an infinite number of times or
+an warning will never be turned into an error.
+
+The following shows an example of use:
+
+    GliderDos I -3 >setdevlimit argos -1 100 4
+    Setting limits for ARGOS:
+      os : # times device can be put back into service: -1
+      w/s: # warnings/segment before error: 100
+      w/m: # warnings in last minute before error: 4
+
+These limits are ignored for CRITICAL and SUPERCRITICAL devices.
+
+GliderDos CLRDEVERRS COMMAND EXPLANATION ============================
+
+The CLRDEVERRS command takes no arguments and resets all error
+statistics (oddities, warnings, errors, and times out of service)
+to 0.  See the USE command to examine the statistics.
+
+GliderDos USE COMMAND EXPLANATION ===================================
+
+The USE command is used to manipulate devices and examine error
+statistics:
+
+    use ?                  ; prints help
+    use                    ; lists all devices
+    use + <dev_name> .. <dev_name> ; Puts device(s) in service
+    use - <dev_name> .. <dev_name> ; Takes device(s) out of service
+    use all               ; Put ALL installed devices in service
+    use none              ; Take ALL devices out of service
+
+The <dev_name> is what is listed by "use".
+
+An example output is show below:
+
+GliderDos A 16 >use
+             name in ALLCAPS means CRITICAL device (* => SUPERCRITICAL)
+                  [I Installed] [- Not_Installed]
+                    [u In_use] [- Not_In_use] [X Out_of_Service]
+             name       limits     stats (#total/#mission/#segment)
+ 0        simdrvr  I u   3  20   5  0
+ 1    test_driver  I u   3  20   5  0
+ 2       WATCHDOG  I u  -1  -1  -1  0
+ 3        DEADMAN  I u  -1  20   5  0
+ 4        CONSOLE* I u  -1  20   5  0
+ 5            GPS  I u  -1  20   5  0
+ 6         pinger  I u   3  20   5  0
+ 7       attitude  I u   3  20   5  0
+ 8 ocean_pressure  I u   3  20   5  0
+ 9         vacuum  I u   3  20   5  0
+10        battery  I -   3  20   5  0
+11          ARGOS  I u  -1  20   5  0
+12       air_pump  I u   3  20   5  0
+13    pitch_motor  I u   3  20   5  0 [   0   0  0] [   0   0  0] [   5   5  5]
+14        science  I u   3  20   5  0
+15     roll_motor  -
+16      fin_motor  I u   3  20   5  0 [   0   0  0] [   0   0  0] [   8   8  8]
+17      altimeter  I u   3  20   5  0
+18            ctd  -
+19        IRIDIUM* I u  -1  20   5  0
+20  BOUYANCY_PUMP  I u   3  20   3  0
+21ENGINE_PRESSURE  -
+22 THERMAL_ENGINE  -
+devices:(t/m/s) errs:   0/   0/   0 warn:   0/   0/   0 odd:  13/  13/  13
+
+The first column is the device number.  It is only used to correlate
+the sensors M_DEVICE_ODDITY, M_DEVICE_WARNING, M_DEVICE_ERROR to an
+actual device. Each of these sensors are updated with the device number
+of the offending device when it indicates an problem.  Note that this
+scheme is not perfect.  If two or more devices generate a problem in the
+same cycle, only one of them will show up in the DBD file.
+
+The second column is the device name.  It is used to label printout to
+the screen and log files and as arguments to various GliderDos commands.
+
+A name in allcaps means the device is a CRITICAL device.  An * following
+the name means the device is a SUPERCRITICAL device.  A CRITICAL device
+is typically one that is required to get the glider to the surface and/or
+provide location information.  A SUPERCRITICAL device is one which is
+required to "talk" to the glider.  A CRITICAL device is never taken out
+of service during a mission due to a device error, but may be taken out of
+service in gliderdos.A SUPERCRITICAL device is never taken out of service
+due to a device error.
+
+The third column indicates whether the device is installed (I) or not (-).
+This is typically set in the autoexec.mi mission file with the installed
+statement.
+
+The fourth column indicates whether the device is currently in use (u),
+not in use (-), or out of service (X).  Being in use is equivalent to
+being "in service".  The GliderDos USE +/- can manipulate the usage and
+any device error can take the device out of service.
+
+The 5th thru 7th columns (limits: os w/s w/m) report the allowable
+number of times the device may be put back in service, the allowable
+warnings/segment in a mission, and the allowable warnings/minute in
+a mission.  The GliderDos SETDEVLIMIT can change these numbers until
+the next reset.  The USE statement in a mission file can also alter them.
+
+The 8th column (stat os) reports the number of times the device has
+been out of service since the last reset.
+
+The final nine columns report all combinations of the number of errors,
+warnings, and oddities since the last reset, in the last mission, and
+in the last segment.
+
+Columns 9 through 11 are error statistics.  Columns 12 through 14 are
+warning statistics.  Columns 15 through 17 are oddity statistics.
+
+They are reported as  #total/#mission/#segment.  If the device has
+never indicated a problem, all of the zeros are suppressed to reduce
+screen clutter.
+
+In this example, the bouyancy_pump been taken out of service 4 times,
+due to the 4 errors.  Each of the 4 errors probably came from getting
+the limit of 3 warnings/minute on four different occasions.  In addition,
+the bouyancy_pump generated 28 total oddities.
+
+The last line totalizes the total number of errors, warnings, and oddities
+from all devices over the same time intervals: #total/#mission/#segment 
+
+SETTING DEVICE LIMITS IN A MISSION FILE =============================
+
+The INSTALLED statement in a mission controls whether or not
+the device exists in the hardware.
+
+    installed <devicename> [0|1]
+
+The 0|1 means that the file must specify either:
+    0    device is NOT installed
+    1    device is installed
+
+An installed device will be USEd by default.
+
+The USE statement in a mission file can be used to specify device
+limits.  (See the top of code\load_mission.c for a description of
+all the allowable statements in a mission file)
+
+    use <devicename> 0|1 [os w/s w/m]
+
+The 0|1 is means that the file must specify either:
+    0    do NOT use the device
+    1    use the device.
+
+The [os w/s w/m] means that the file may optionally supply
+the allowable times out of service (os), allowable warnings/segment (w/s),
+and allowable warnings/minute (w/m).
+
+
+MISC SOURCES
+
+This section describes a few conditions that trigger a synchronous
+abort that don't fit any other characterization.
+
+    MS_ABORT_DEV_NOT_INSTALLED          A required device is missing
+
+Some device required to fly the glider is not installed, e.g. neither
+a fin_motor nor a roll_motor is installed.  This would leave no
+way to steer the glider.
+
+
+    MS_ABORT_INFLECTION         The inflection state machine never
+                                completed in a reasonable time.
+
+During inflections, a special state machine controls the activation of
+all the motors in a controlled sequence.  If this state machine
+does not finish the inflection in 52 seconds, a synchronous abort
+is triggered.
+
+
+WHAT TRIGGERS AN ABORT::OUT OF BAND**********************************
+
+An out of band abort is only generated when the software believes that
+the software is damaged and/or unreliable.  There are only a few
+conditions which trigger an out of band abort:
+
+          SOFTWARE IN IMPOSSIBLE PLACE
+          SYNCHRONOUS ABORT FAILED
+          OOB_ABORT BEHAVIOR (FOR TESTING)
+
+SOFTWARE IN IMPOSSIBLE PLACE
+
+This is probably the most typical cause.  If software is detects
+that it is in a branch of code where it shouldn't be or some
+of the assumptions made when writing the code aren't true, it triggers
+an out of band abort.
+
+SYNCHRONOUS ABORT FAILED
+
+If a synchronous abort concludes that it failed to get the glider
+to the surface, it triggers an out of band abort.  This is really
+the last ditch effort to get the glider back.
+
+OOB_ABORT BEHAVIOR (FOR TESTING)
+
+The behavior oob_abort can purposely trigger an out of band abort
+for testing purposes.  See missions/abort-tests/oobabort.mi.
+
+WHAT TRIGGERS AN ABORT::HARDWARE GENERATED***************************
+
+This section should be more properly titled "What prevents a
+hardware generated abort".  The hardware will automatically initiate
+the hardware abort if it has been 2 hours (or 16 hours depending on
+a jumper setting) since the software last issued a COP tickle pulse.
+
+The software issues a COP tickle pulse:
+
+    1. When the user executes a command in GliderDos
+
+    2. when a_console_is_alive() is non-zero.
+        a_console_is_alive() checks the Freewave RF modem
+        and the Iridium satellite modem as follows:
+          Freewave: When M_CONSOLE_CD is non-zero the
+                    Freewave RF Modem is in communication.
+          Iridium: when M_IRIDUM_STATUS equals MODEM_CONNECT,
+                   MODEM_BUSY, or MODEM_NO_ANSWER.
+
+    3. When the gps has indicated communication with a satellite
+       and U_TICKLE_ON_GPS is non-zero. Satellite communication
+       is detected by M_GPS_LAT or M_GPS_IGNORED_LAT having
+       been updated.  This corresponds to the gps outputting either
+       an A or V line.
+
+
+These conditions were chosen to indicate that the glider is on the
+surface and/or in communication with a human.
+
+M_COP_TICKLE is updated with a value of 1.0 whenever the hardware
+is "tickled".
+
+ABORT ALGORITHMS-----------------------------------------------
+
+This section describes the operation during each of the abort
+sequences.
+
+
+ABORT ALGORITHMS::SYNCHRONOUS **************************************
+
+The primarily philosophy of this abort is to get the glider to the
+surface without dropping the weight.  Dropping the weight means that
+the glider must be retrieved and a new weight installed before it can
+dive again.
+
+In general, the abort code will be quite patient about dropping the
+weight if the glider isn't in danger of being crushed.  If the glider
+getting so deep that the hull may be crushed, it drops the weight
+quickly.
+
+See code/layered_control.c/abort_the_mission()
+
+When the abort is triggered:
+    The glider issues 20 pings.
+
+    The depth of the glider (M_DEPTH) is remembered in an internal
+    variable, depth_at_abort_start.
+
+    The U_CYCLE_TIME is changed to 15 seconds.  Each cycle
+    is referred to as a "try".
+
+On every cycle (try):
+
+   Unused input sensors are turned off in a effort to conserve power:
+       C_ATT_TIME (attitude)
+       C_ALT_TIME (altimeter)
+       U_BATTERY_TIME (battery voltage measurement)
+       U_VACUUM_TIME (vacuum measurement)
+       C_PROFILE_ON (ctd)
+
+   A few input devices are turned on:
+        C_GPS_ON    Set to CMD_GPS_SHOW_ALL_TEXT(7) to turn the gps
+                    on and echo the raw gps output to the screen.
+                    This is to aid relocation in the event of glider
+                    software failure.
+
+        C_PRESSURE_TIME  Set to 0 (measure as often as possible) and 
+                    forced to be "reported" to the screen and *.MLG
+                    file.
+
+
+   Output devices are set to get the glider to the surface:
+    C_BALLAST_PUMPED  X_BALLAST_PUMPED_MAX  Get buoyant
+    C_THERMAL_DESCEND 0.0
+    C_AIR_PUMP        1.0
+
+    C_BATTPOS         U_ABORT_C_BATTPOS     Pitch upward
+
+    C_FIN             0.0                   Steer straight
+    C_BATTROLL        0.0
+
+    C_ARGOS_ON        1.0                   Argos transmitting
+    C_CONSOLE_ON      2.0                   Freeware RF Modem on
+
+
+The remaining decisions to make on a cycle by cycle basis are based
+on M_DEPTH.
+
+If the glider is at the surface, the mission exits to GliderDos.
+If mission were being SEQUENCEd, the next mission will be run.  If
+a single mission was being RUN, the glider will stay at the GliderDos
+prompting waiting for someone to tell it what to do. As a result, after
+an abort from a RUN MISSIONNAME.MI command, the glider will simply sit
+on the surface without any active control.  Therefore...
+
+    NEVER RUN A SINGLE MISSION (run misionname.mi) AND LEAVE THE
+    GLIDER UNATTENDED.  ALWAYS sequence missionname.mi ... missionname.mi
+
+    There are addition protections provided by SEQUENCE command and
+    ways that GliderDos will automatically run safe missions if no
+    one types a key in a while.  See 
+
+If the glider isn't at the surface, the abort sequence decides if
+it should:
+
+     1. wait patiently for the glider to get the surface
+     2. Drop the weight
+     3. Give up and attempt an out of band abort
+
+This decision is based on the glider depth (M_DEPTH).  The ocean is
+vertically divided into four regions.  All caps mean a masterdata
+"sensor" value.  The number in ()'s are example values.  They can and will
+be different in practice.  These values are only for purposes of
+illustration:
+
+
+---------------------DEPTH        ACTION-------------------------------
+
+                        0m
+                                  At surface, abort is done
+
+U_REQD_DEPTH_AT_SURFACE(1m)
+                                  Above working depth, no danger
+                                  of being crushed.  Only drop the weight
+                                  if we have been in the abort sequence
+                                  for more than U_ABORT_MAX_BURN_TIME
+                                  seconds.  Masterdata defaults to 1 hour.
+
+F_MAX_WORKING_DEPTH    (30m)
+
+                                  Deeper than we ought to be.
+                                  Drop the weight based on time and if
+                                  things don't look right, i.e. glider
+                                  isn't going up, the depth sensor appears
+                                  to be broken, the abort sequence has
+                                  taken too long.
+
+at risk depth          (186m)     
+                                  This is the depth where the glider would
+                                  reach F_CRUSH_DEPTH (diving nominally) in
+                                  the time it takes to burn the wire 
+                                  (F_TIME_TO_BURN_WIRE) and have the weight
+                                  actually drop.  The glider immediately
+                                  starts the wire burning.
+
+
+F_CRUSH_DEPTH          (200m)     
+                                  The glider can be crushed.  The glider
+                                  immediately starts the wire burning.
+
+
+The "at risk depth" is calculated as:
+        = F_CRUSH_DEPTH(m) - nominal_dive_rate(m/s)  * F_TIME_TO_BURN_WIRE(s)
+        =    200m          -      0.12 m/s             *  120 s
+        =    200m          -      
+        =    200m          -  14m
+        =    186m
+
+In most of the regions, the operation is straightforward.  At the surface, the
+abort sequence is done.  Above F_MAX_WORKING_DEPTH, the burn wire is
+activated U_ABORT_MAX_BURN_TIME seconds into the abort sequence.
+Below the "at risk" depth, the burn wire is immediately activated.
+
+The decision to burn the wire when M_DEPTH is between F_MAX_WORKING_DEPTH
+and the "at risk depth" needs discussion:
+
+    1. The wire is never burned in this region before U_ABORT_MAX_BURN_TIME
+       seconds into the abort sequence.
+
+    2. After U_ABORT_MAX_BURN_TIME seconds, the wire is burned if
+           a. the glider is not going up --or--
+           b. the depth sensor appears to not be working --or--
+           c. It's taking the glider too long to get to the surface
+
+The details of these decisions are described below:
+
+"not going up"
+    The glider depth at the start of the abort sequence is recorded
+    in an internal variable.  After U_ABORT_TURN_TIME seconds in the
+    abort sequence, if the glider depth, M_DEPTH, is greater than the
+    depth at the start of the abort sequence, the glider is presumed to
+    not be going up
+
+
+"depth sensor not working"
+    If a fresh M_DEPTH is not recorded every U_ABORT_TURN_TIME seconds, the
+    glider concludes that the depth sensor isn't functioning.
+
+
+"glider taking too long to get to surface"
+    A maximum allowable time to for the glider to get to the surface
+    is calculated:
+       = 3 * (depth_at_abort_start/ nominal_dive_rate + U_ABORT_TURN_TIME)
+       = 3 * (depth_at_abort_start/    0.12 m/s       + U_ABORT_TURN_TIME)
+          
+    The 3x an arbitrary hardwired multiplier.  If the abort sequence
+    takes more than this many seconds, wire burning is initiated.
+
+
+Once the synchronous abort code has started the wire burning to drop
+the weight, it will wait "postburn_wait_time" seconds for the glider
+to get to the surface.  If the glider hasn't reached the surface in
+"postburn_wait_time" seconds, an out of band abort is started.
+"postburn_wait_time" is calculated as
+    = F_TIME_TO_BURN_WIRE + U_ABORT_TURN_TIME +
+      3 * M_DEPTH(at time of burn)/nominal_dive_rate
+
+    = F_TIME_TO_BURN_WIRE + U_ABORT_TURN_TIME +
+      3 * M_DEPTH(at time of burn)/0.12m/s
+
+
+The screen and log printout from a synchronous abort is repeated here
+from a previous section:
+
+ 62.87 28 behavior ?_-1: abort_the_mission(1): (8)MS_ABORT_OVERTIME
+ 62.90    behavior ?_-1:    depths ini: 6 working: 25 at risk: 186 crush: 200
+ 62.96    behavior ?_-1:    expected time/tries to surface: 457 30
+ 63.01    behavior ?_-1:    max time/tries to go up:  300 20
+ 63.05    behavior ?_-1:    too long: 0, not going up: 0, depth sensor busted:0
+ 63.12    behavior ?_-1:    abort burn time/tries min: 600 40
+ 63.16    behavior ?_-1:    abort burn time/tries max: 3600 240
+ 63.21    behavior ?_-1:    ABOVE WORKING DEPTH
+ 63.26    behavior ?_-1:    drop_the_weight = 0
+
+
+    abort_the_mission(1)    The number in ()'s is the current try (cycle)
+                            count of the abort sequence.
+                                
+    (8)MS_ABORT_OVERTIME    Why the abort sequence was started
+                          
+    depths ini:             glider depth at the start of the abort (m)
+    working:                F_MAX_WORKING_DEPTH(m)
+    at risk:                "at risk depth"(m)
+    crush:                  F_CRUSH_DEPTH(m)
+
+    expected time:     The time in seconds the glider is allowed to
+                       get to the surface when below F_MAX_WORKING_DEPTH
+                       and above "at risk depth"
+    tries to surface:  The number of cycles (at 15 seconds) for the same,
+                       e.g. 457 secs / 15 secs/cycle = 30 cycles (or tries)
+    
+    max time/tries to go up:  The time in seconds(and cycles at 15 secs)
+                      that it should take for the glider to begin going
+                      up.  This is also the time required update rate
+                      of M_DEPTH.
+
+    too long: 0
+    not going up: 0
+    depth sensor busted:0 These are boolean (0 or 1) variables
+                          that indicate the state of the tests that
+                          are acted on when the glider is below
+                          F_MAX_WORKING_DEPTH and above "at risk depth"
+                          
+
+    abort burn time/tries min: U_ABORT_MIN_BURN_TIME in seconds and cycles
+    abort burn time/tries max: U_ABORT_MAX_BURN_TIME in seconds and cycles
+
+    ABOVE WORKING DEPTH   Which vertical region of ocean the glider is in:
+                              ABOVE WORKING DEPTH
+                              BELOW WORKING DEPTH, ABOVE AT RISK DEPTH
+                              BURN BABY BURN, BELOW AT RISK DEPTH
+                              BURN BABY BURN, BELOW CRUSH DEPTH
+
+    drop_the_weight = 0   A boolean indicating whether the abort sequence
+                          has decided to drop the weight and is burning
+                          the wire
+
+
+ABORT ALGORITHMS::OUT OF BAND **************************************
+
+The out of band uses a similar philosophy to the synchronous abort, but
+is purposely coded completely differently in hopes of not replicating any
+unknown bugs in the synchronous abort code.
+
+When the out of band abort is started, 20 pings are emitted.  All of the
+motors, input sensors, and output sensors are set to the same values as
+in a synchronous abort.  See that section for the details.
+
+A series of attempts (tries) are made to get the glider to the surface.
+The out of band abort is only terminated by a user hitting a key.  It
+never exits to GliderDos.  The user must cause the glider to be reset or
+in extraordinary circumstances to return to the PicoDos operating system.
+
+The length of each try is computed as:
+    = 2 * worst_case_ascent_time secs
+    = 2 * (120 secs + expected_ascent_time(F_MAX_WORKING_DEPTH) )
+    = 2 * (120 secs + F_MAX_WORKING_DEPTH(m) / nominal_dive_rate(m/s) )
+    = 2 * (120 secs + F_MAX_WORKING_DEPTH(m) / 0.12 m/s )
+
+Some examples: 
+     F_MAX_WORKING_DEPTH(m)            try length
+          30                            740 secs  (12 min)
+         100                           1906 secs  (23 min)
+         200                           3573 secs  ( 1 hour)
+
+
+The out of band abort sequence makes a decision to burn the wire
+and drop the weight based on the current try count, the time into the 
+out of band abort sequence, the glider depth (M_DEPTH), and whether
+there is communication via the RF Modem.  The table below outlines
+the decision process:
+
+    try#     
+    0        do not drop the weight
+
+    1-10     do not drop the weight if
+                  time in abort sequence < U_ABORT_MIN_BURN_TIME --OR--
+                  have carrier detect from freeware              --OR--
+                  M_DEPTH indicates we are at the surface        --OR--
+                  
+
+   11-20     do not drop the weight if
+                  time in abort sequence < U_ABORT_MIN_BURN_TIME --OR--
+                      have carrier detect from freeware --AND--
+                      M_DEPTH indicates we are at the surface
+
+    21+      drop the weight regardless
+
+In addition ......
+    the weight is immediately dropped...
+        if M_DEPTH > F_CRUSH_DEPTH
+        time in abort sequence > U_ABORT_MAX_BURN_TIME
+
+Portions of the screen printout are reproduced from a prior section.
+There are NO log files produced during an out of band abort.
+
+    are_at_surface:0   are_in_contact:1  M_DEPTH:    16.6
+    drop_weight_by_try_count: 0
+    time_in_abort_sequence: 30 secs
+    device_scheduler() try#:0, this time(s):     30 allowed time(s):    656
+
+
+are_at_surface:0    A boolean (0 or 1) indicating whether glider thinks it
+                    is at the surface or not.
+
+are_in_contact:1    A boolean (0 or 1) indicating whether glider thinks it
+                    it is in radio contact.
+
+M_DEPTH:    16.6    The current depth of the glider in meters.
+
+drop_weight_by_try_count: 0     A boolean (0 or 1) indicating whether the
+                                out of band abort has decided to start
+                                burning the wire based on the number of
+                                tries.                                
+
+time_in_abort_sequence: 30 secs    How long in the out of band abort sequence.
+
+device_scheduler() try#:0,         The current try number.
+
+this time(s):     30               The number of seconds into this try
+
+allowed time(s):    656            The length of a try
+
+
+
+
+ABORT ALGORITHMS::HARDWARE GENERATED *******************************
+
+In a hardware abort, the following devices are activated:
+
+    air pump   Powered on
+    argos      Powered on (serial port is NOT enabled)
+    pinger,    Rep rate set by jumpers. Normally set to 8 seconds.
+    burn wire
+
+Note that for the air pump to be effective, the software must have
+left the air solenoid in the proper position to allow the air bag
+to fill.
+
+The hardware assumes control of the power for these devices.  The
+software is prevented from powering them off.
+
+
+Sequences/GliderDos/initial.mi & lastgasp.mi ************************
+
+Sequences.....
+
+As previously described, one should always "sequence" a mission from
+GliderDos in a real deployment as opposed to "run" a mission.
+
+    sequence a.mi b.mi c.mi
+
+Will execute(run) each mission until the mission ends normally or
+aborts.  In either event, the next mission is run. If the user
+ever aborts a mission by typing control-c, the entire sequence is
+terminated and control returns to GliderDos.
+
+If the last mission ends, c.mi in this example, a special mission
+with a "magic" name is executed:
+    lastgasp.mi
+
+This should normally be a safe mission, like a hold.mi.
+
+A sensor controls what happens if lastgasp.mi aborts:
+
+    U_MAX_ALLOWED_LASTGASP_ABORTS (defaults to 1)
+
+lastgasp.mi is allowed to re-execute this many times before:
+    1. U_MAX_TIME_IN_GLIDERDOS is set to the value of            
+       U_SEQUENCE_MAX_TIME_IN_GLIDERDOS
+    2. Control returns to GliderDos
+
+As described in the next section, control will remain in GliderDos
+as long as keystrokes are heard.  If U_MAX_TIME_IN_GLIDERDOS goes
+by without a keystroke, GliderDos will execute a SEQUENCE....
+starting the whole process over.
+
+GliderDos.....
+
+In GliderDos, the glider isn't under active control, i.e. it is
+not running a mission.  To prevent a glider from drifting forever
+in GliderDos, it will automatically execute a SEQUENCE command
+(effectively running lastgasp.mi) if it hasn't heard a keystroke
+in U_MAX_TIME_IN_GLIDERDOS seconds.
+
+
+initial.mi & lastgasp.mi....
+
+When the glider is initialled powered on (or reset) it automatically
+executes a
+    "SEQUENCE initial.mi"
+
+This causes initial.mi to run and on it's termination, runs lastgasp.mi.
+
+This is allow reasonable behavior it the glider is spuriously reset
+at sea.
+

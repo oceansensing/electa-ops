@@ -1,0 +1,240 @@
+file: doco/how-it-works/heading_autopilot.txt
+13-Apr-00 tc@DinkumSoftware.com Initial proposal
+14-Apr-00 tc@DinkumSoftware.com Changed C_Mxx_HEADING_AP_PERIOD to
+                                        U_Mxx_HEADING_AP_PERIOD
+13-Jul-00 tc@DinkumSoftware.com Added u_heading_max_roll(rad)
+                                Fixed up some sensor names
+30-Mar-04 tc@DinkumSoftware.com Made it reflect reality
+                                changed from roll to fin
+01-Apr-04 tc@DinkumSoftware.com VERSION_1
+                                No longer center fin in deadband,
+                                learn the "resting" position
+03-Apr-04 tc@DinkumSoftware.com Redesigned the clipping limits
+09-Apr-04 tc@DinkumSoftware.com VERSION_1.1  Major rework:
+          Need separate integrators for up and down that run
+            asynchronously to main control loop.  Too hard to
+            reliably switch between them
+          Added integrators for outside the deadband in
+            anticipation of adding an I term to fix "stable but
+            bad positions"
+          Added upstream feedback that the autopilot doesn't
+            have control.
+11-Apr-04 tc@DinkumSoftware.com Added u_hd_fin_ap_reqd_{deadband/normal}_i_time(secs)
+15-Jun-04 tc@DinkumSoftware.com Almost complete rewrite to reflect extensive
+                                algorithm changes in spring of '04
+21-Sep-04 tc@DinkumSoftware.com Version 2.4.  Introduced u_hd_fin_ap_hardover_holdoff
+                                Delay use of integrated error after fin is hardover
+                                Removes wobble in course
+12-Sept-2011 lcooney@teledyne.com Added derivative component and deadbands on rate 
+				and error
+13-Oct-2011 lcooney@teledyne.com Updated values for gains and added additional comments for
+				resetting integral term.
+
+This describes the algorithm for the heading control.
+
+Historical note:
+Most of today's glider steer by a fin.  The initial
+gliders steered by moving an internal battery.  Both
+methods are still supported in the glider software,
+but this documentation is written assuming fin steering.
+There are a duplicate set of sensors (and identical
+steering algorithm) for battery roll steered gliders.
+
+
+### Some definitions:
+    C_HEADING      Our desired heading in radians
+    M_HEADING      The current heading in radians
+
+    C_FIN          The fin position to use in radians, i.e. what this
+                   algorithm computes. For sake of this discussion
+                   assume it runs -1 to 1 where 1 is maximum fin position
+                   See description below about Clipping Limits
+
+    M_HDG_ERROR    The current heading error in radians
+                   = M_HEADING - C_HEADING (corrected for compass wrap)    
+
+    M_HDG_IERROR   integrated M_HDG_ERROR
+
+    M_HDG_DERROR   time derivative of M_HDG_ERROR
+
+### Controls available to user:
+The numbers in [] are the default values from masterdata.
+
+       # controls/knobs: the user might change these
+sensor: u_hd_fin_ap_gain(1/rad)      1.50 # The "gain" of controller: 57 deg proportional band
+                                          # 1/57 deg
+sensor: u_hd_fin_ap_igain(1/rad-sec) 0.02
+sensor: u_hd_fin_ap_dgain(sec/rad) -4.00 
+                                      # percent C_FIN = (-U_HD_FIN_AP_GAIN  * M_HDG_ERROR) +
+                                      #                 (-U_HD_FIN_AP_IGAIN * M_HDG_IERROR)+
+                                      #                 (-U_HD_FIN_AP_DGAIN * M_HDG_DERROR)
+
+# initial best guess for u_low_power_cycle_time(s) = 30
+sensor: u_low_power_hd_fin_ap_gain(1/rad)      1.0   # not a function of time
+sensor: u_low_power_hd_fin_ap_igain(1/rad-sec) 0.004 # 4/30 * 0.03
+sensor: u_low_power_hd_fin_ap_dgain(sec/rad) 0.00 # this value has not been tested.
+
+
+
+# These get set to either u_hd_fin_ap_gain(igain) or
+# u_low_power_hd_fin_ap_gain(igain) depending on the value of x_cycle_time.
+# Initially set to the default values of u_hd_fin_ap_gain(igain).
+sensor: x_hd_fin_ap_gain(1/rad)       1.50
+sensor: x_hd_fin_ap_igain(1/rad-sec)  0.02
+sensor: x_hd_fin_ap_dgain(sec/rad) -4.00 
+
+sensor: u_hd_fin_ap_run_time(secs)  -1  # How often to "run" the loop
+                                        # <= 0, every cycle
+                                        #  > 0, this many seconds
+
+        # What to do around inflections
+sensor: u_hd_fin_ap_inflection_holdoff(sec)   -1.0 # in, controls steering around inflections
+                                                   #     -1 always steer/integrate_errors during inflection
+                                                   #     >=0 don't steer/integrate errors:
+                                                   #     during inflection  --AND--
+                                                   #     for this many secs after START of inflection
+
+        # Deadbands on heading error and rate error.  If heading error and rate error are both within these deadbands, don't move the fin:   
+        # 	if (fabs(M_HDG_ERROR) <= X_HEADING_DEADBAND) && (fabs(M_HDG_DERROR) <= X_HEADING_RATE_DEADBAND), are_within_deadband = true.
+        # To disable completely (i.e. ignore if in deadband or not), set either value to -1.  
+        # To turn off one deadband but not the other, set the one you want to turn off to a very high value,
+        # i.e. want to turn off deadband on rate error: set x_heading_rate_deadband 1000.0
+sensor: x_heading_deadband(rad) 0.087 #in, deadband for heading error M_HDG_ERROR
+sensor: x_heading_rate_deadband(rad/s) 0.0087 #in, deadband for heading rate error M_HDG_DERROR
+
+        # How long to not integrate after big course changes
+sensor: u_hd_fin_ap_hardover_holdoff(sec)  120.0   # in, how long to keep zeroing the integrated
+                                                   # error after fin is "hard over".
+                                                   # <= 0 causes no holdoff time, i.e. starts integrating
+                                                   # immediately after fin is NOT hardover.
+
+        # various clipping limits
+sensor: u_hd_fin_ap_limit_gain_x_error(rad) 1000.0 # Limits the gain*error term, (flattens gain curve)
+                                                   # Set it large to disable it.
+
+sensor: u_hd_fin_ap_limit_absolute(rad) 1000 # limits final C_FIN value to beween +/- this value.
+                                             # Set it large to disable it.
+                                             # Note: this is also limited to the
+                                             #       fin safety limit X_FIN_MAX.
+
+sensor: u_hd_fin_abort_after_y_misses(nodim) 5.0 # in, how many missed attitude measurements
+                                                #     before we aborting the mission
+                                                # <= 0   never abort
+                                                #    1   abort on first miss
+                                                # >= 2   abort when miss this many times in a row
+
+       # state: user shouldn't change, they are outputs only
+sensor: x_hd_fin_ap_ran(bool)      -10 # Updated on a cycle where heading autopilot executed
+                                       #  -1     First time initialization
+                                       #   0 ;   called, but chose not to command motor
+                                       #   1 ;   did not run cause no fresh input
+                                       #   2 ;   did not run cause too close to inflection
+                                       #   3 ;   did not run cause not time to run yet
+                                       #   4 ;   "ran", controlled motor
+                                       #   5 ;   did not run cause within deadband 
+               
+sensor: x_hd_fin_ap_is_hardover(bool) 0 # true implies fin is "hardover"
+
+sensor: x_heading_reversal(rad) 2.96 # in, if x_heading_reversal <= heading error <= (2*pi-x_heading_reversal), then
+				    # we are trying to reverse directions
+
+Abstract:
+    A proportional, integral and derivative controller (PID) will be run.
+    It examines M_HDG_ERROR, M_HDG_IERROR, M_HDG_DERROR and multiplies by X_HD_FIN_AP_GAIN,
+    X_HD_FIN_AP_IGAIN, X_HD_FIN_AP_DGAIN:
+
+
+Details:
+
+The controller is called every cycle (nominally 2 seconds) and computes M_HDG_ERROR
+from C_HEADING and M_HEADING.
+
+M_HDG_DERROR is calculated by taking the time derivative of M_HDG_ERROR.  We compute the error
+between the current value of M_HDG_ERROR and the value from the previous control cycle Y_error_prev, and
+divide by the time between the current and previous control cycle: 
+s->Y_Derror = (s->Y_error,s->Y_error_prev) / secs_between_timestamps(s->timestamp_called,s->timestamp_we_last_ran ).  
+
+M_HDG_ERROR is integrated to produce M_HDG_IERROR.  Note that the integrated error
+is reset to 0 whenever:
+(a) the fin is "hard over" (and for U_HD_FIN_AP_HARDOVER_HOLDOFF seconds afterward).   
+(b) inflecting, and the user specified not to steer during inflections
+(c) if heading position/rate are within deadbands, and user specified to not run if within heading position and rate deadbands.
+During this time, the control is just based on the proportional and dertivative terms.
+The intent is to only use the integrated error after the glider is "on course".
+
+The controller may choose NOT to run if 
+(a) there isn't a fresh heading measurement
+(b) user specified not to steer during inflections (U_HD_FIN_AP_INFLECTION_HOLDOFF)
+(c) user specified to not run every cycle(U_HD_FIN_AP_RUN_TIME)
+or (d) user specified to not run if within heading position and rate deadbands.
+The reasons why it did or didn't run are recorded in X_HD_FIN_AP_RAN.
+
+If the controller runs, it outputs a new commanded fin:
+
+    C_FIN = X_FIN_MAX * ( X_HD_FIN_AP_GAIN  * M_HDG_ERROR +
+                          X_HD_FIN_AP_IGAIN * M_HDG_IERROR +
+                          X_HD_FIN_AP_DGAIN * M_HDG_DERROR)
+
+Clipping Limits
+    The user is given 3 controls on limiting the fin movement:
+
+	a. Deadbands on heading error and rate error X_HEADING_DEADBAND(rad) and
+	   X_HEADING_RATE_DEADBAND(rad/s). If heading error and rate error are both 
+           within these deadbands, don't move the fin. This limits fin 
+           movements, and is essentially finding the 'zero' fin position.
+
+        b. Control the amount of movement around the resting point.
+           This applies a limit to the gain*error term before it is
+           added to the resting point.  This effectively changes the
+           point where the gain curve flattens from the safety
+           limit (X_FIN_MAX) and to this limit(U_HD_FIN_AP_LIMIT_GAIN_X_ERROR)
+           The unlimited gain curve on the left is limited to produce the
+           gain curve on the right:
+
+                     .........
+                    .                  
+                   .                  .........
+                  .            ==>   .
+                 .                  .
+                .                  .
+
+        U_HD_FIN_AP_LIMIT_GAIN_X_ERROR(rad) limits max gain*error term
+
+       c. The final C_FIN position can be limited.  This is applied after the gain*error
+          has been added to the resting position.
+
+         U_HD_FIN_AP_LIMIT_ABSOLUTE(rad) limits final C_FIN value to beween +/- this value.
+                                         Set it large to disable it.
+                                         Note that this is also limited to the fin
+                                         safety limit X_FIN_MAX.
+
+       There also used to be a control on the deviation of resting point from center(0) can be limited, 
+	but it was taken out:
+          U_HD_FIN_AP_LIMIT_RESTING(rad)
+                                        The resting point (where fin put in deadband)
+                                        is limited to between +,- this value.
+                                        Set it large to disable it.
+
+F_FIN_OFFSET(rad)
+     The capability (rarely used to date) exists to allow the user
+     to move the "zero" position of the fin.  At the device driver
+     level, e.g. after the heading autopilot has run, F_FIN_OFFSET
+     is added to C_FIN before actually commanding the motor.
+
+     The heading servo has NO knowledge of this correction.
+
+
+MATLAB SCRIPTS
+     There are a variety of Matlab scripts that can be used
+     to plot many of the variables associated with this
+     heading controller.  The can be found in directory:
+       glider/parse/scripts
+         hd_fin_ap.m        for fin steered models
+         heading_ap.m       for battery steered models
+
+         hdg_n_roll.m       
+         heading_plot.m     
+         pitch_roll_head.m
+                               
+     
+    

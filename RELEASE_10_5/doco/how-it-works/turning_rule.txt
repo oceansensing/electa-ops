@@ -1,0 +1,27 @@
+08-May-00 tc@DinkumSoftware.com 
+
+
+To Turn the Vehicle LEFT (heading decreasing):
+   When Diving:    Positive (> 0) C_BATTROLL
+
+   When Climbing:  Negative (< 0) C_BATTROLL
+
+
+To Turn the Vehicle RIGHT (heading increasing):
+   When Diving:    Negative (< 0) C_BATTROLL
+
+   When Climbing:  Positive (> 0) C_BATTROLL
+
+
+----------------------------------------------------
+
+Positive (>0) C_BATTROLL
+   When Diving:    Turns vehicle Left (heading decreasing)
+
+   When Climbing:  Turns vehicle Right(heading increasing)
+
+Negative (<0) C_BATTROLL
+   When Diving:    Turns vehicle Right(heading increasing)
+
+   When Climbing:  Turns vehicle Left (heading decreasing)
+

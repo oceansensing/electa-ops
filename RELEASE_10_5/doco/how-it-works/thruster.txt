@@ -1,0 +1,550 @@
+doco/how-it-works/thruster.txt
+
+This document describes operation of the thruster module.
+
+12-Oct-2012 lacooney@alum.mit.edu     Initial
+20-Nov-2012 lacooney@alum.mit.edu     Update to error reporting, pitch-based depth control and Controls available to user.
+14-Dec-2012 lacooney@alum.mit.edu     Update to Thruster mode 2 and 3, Energy Monitoring, Error reporting, Abend thruster control
+01-Mar-2013 lacooney@alum.mit.edu     Added Thruster mode 4. Modified any current monitoring to power monitoring
+30-Apr-2013 lacooney@alum.mit.edu     Added Thruster Burst, Lens Penetration (M#1514), and Quick-start guide
+
+TABLE OF CONTENTS
+
+Quick-Start Guide
+  Operational Usage
+  longterm.dat
+  config.srf
+  sbdlist.dat
+
+Devices
+
+Operational Usage
+  Thruster modes
+    Thruster mode 1: command % of max
+    Thruster mode 2: command % of max voltage
+    Thruster mode 3: depth rate feedback control
+    Thruster mode 4: power feedback control
+  Thruster surface burst
+  Limiting thruster command
+  Thruster activation
+  Thruster state
+  Error reporting
+
+Lens Penetration
+  Description
+  Sample .ma files
+  Sensor monitoring
+
+Steering control
+
+Pitch control
+
+Vehicle speed estimation
+
+Energy monitoring and error reporting
+  Sensors for 'thruster' and 'thruster_g1' devices
+  Sensors for 'thruster' device only
+  Error reporting
+
+Drift_at_depth specifics
+  Depth Control Method 0: Bpump-based depth control
+  Depth Control Method 1: Servo bpump-based depth control
+  Depth Control Method 2: Pitch-based depth control
+  Drift_at_depth Steering Control
+
+Abend thruster control
+
+Lens penetration
+
+Controls available to user
+  Behaviors
+  Sensors 
+
+
+
+Quick-Start Guide:
+====================
+
+Operational Usage
+---------------------
+
+There are three modes in which you can use thruster-assist:
+- yo-based sawtooth flight
+- drift_at_depth horizontal flight
+- surface assist/lens penetration
+
+										    		
+In the yo (using the traditional 'd_' and 'c_' prefix), drift_at_depth, and surface behaviors,
+you can specify the thruster mode and value as follows:
+    b_arg: use_thruster(enum)   0  
+    				   # 0  Not in use
+    				   # 1  Command input voltage (as % of glider voltage)
+    				   # 2  Command input voltage (as % of max thruster input voltage)
+    				   # 3  Command depth rate.  See sensors for use_thruster = depthrate	
+                                   # 4  Command input power. See sensors for use_thruster = power	
+    b_arg: thruster_value(X)   0.0              
+    				   # use_thruster == 0  None
+    				   # use_thruster == 1  %, desired % of max, between [0, 100] 
+    				   # use_thruster == 2  %, desired % of F_THRUSTER_MAX_V, between [0, 100]
+    				   # use_thruster == 3  m/s, desired depth rate. >0 for dive, <0 for climb/surface
+    				   # use_thruster == 4  watt, desired input power, between [f_thruster_power_min,max]
+
+
+For drift_at_depth horizontal flight, the default mode to use should be b_arg: use_thruster = 4. 
+See missions/bathtub.mi and mafiles/drift_10.ma for samples.
+
+For yo-based or surface assist, the default modes should be b_arg: use_thruster = 3 or 4.
+
+If using the thruster for lens penetration (see the Lens Penetration section), you may wish to 
+include the c_stop_when_air_pump argument in the surface behavior:
+behavior: surface
+  b_arg: c_stop_when_air_pump(bool)  1           #! terminate climb once air pump has been inflated
+  b_arg: c_use_thruster(enum)   3  # 3  Command depth rate.    
+  b_arg: c_thruster_value(X)   -0.05 # use_thruster == 3  m/s, desired depth rate. <0 for climb
+
+behavior: yo
+  b_arg: c_use_thruster(enum)   3  # 3  Command depth rate.    
+  b_arg: c_thruster_value(X)   -0.05 # use_thruster == 3  m/s, desired depth rate. <0 for climb
+
+
+Note that the thruster will also be turned on for a short burst right before diving after a surfacing in order
+to remove buildup (see Thruster surface burst). This is turned on by default, and can be disabled.
+
+
+longterm.dat
+---------------------
+The following sensors should be added to longterm.dat for longterm performance monitoring:
+m_thruster_power_spike
+m_thruster_amphr
+m_thruster_watthr
+
+
+config.srf
+---------------------
+The following sensors may be added to config.srf
+m_thruster_power_spike
+
+The following sensors may be useful to add to config.srf if using the thruster for lens penetration
+c_thruster_surface_secs
+c_thruster_depth_rate_secs
+c_thruster_surface_depth
+c_thruster_depth_rate_depth
+
+
+sbdlist.dat
+---------------------
+The following sensors may be added to sbdlist.dat to monitor performance (adjust the frequency
+as desired):
+m_thruster_power 180
+c_thruster_on 180
+
+
+
+Devices
+====================
+There are two device drivers for the thruster unit motor controller:
+- 'thruster': motor controller with electrical current feedback.  Can only be used on G2 gliders.
+- 'thruster_g1': motor controller that can be used on any glider
+The specification of either of these determines the value of sensor X_THRUSTER_HAS_CURRENT_SENSE (which specifies the method of 'Vehicle speed estimation') and device error reporting.  Otherwise, the methods for mission structure, controller design, status reporting, etc are the same between devices.
+
+
+Operational Usage
+====================
+
+Thruster modes
+---------------------
+There are 4 modes of operation for the thruster.  The recommended mode is mode 4:
+
+## Thruster mode 1: command % of glider voltage
+For use_thruster=1, thruster_value specifies a percentage (between [0,100]) of the glider voltage (M_BATTERY_INST) to the thruster.
+C_THRUSTER_ON is simply thruster_value.
+Instead of a step input command (0 to thruster_value), C_THRUSTER_ON is gradually ramped up to avoid a power spike.  The change in
+input is limited by U_THRUSTER_DELTA_MAXu_thruster_delta_max
+## Thruster mode 2: command % of max voltage
+For use_thruster=2, thruster_value specifies a percentage (between [0,100]) of the maximum allowed voltage to the thruster, F_THRUSTER_MAX_V.
+ex: thruster_value = 40, means that you command 40% of F_THRUSTER_MAX_V (9.0V), which gives input voltage to the thruster M_THRUSTER_VOLTAGE = 9.0 * 0.4 = 3.6V input to the thruster.
+The command to the thruster controller C_THRUSTER_ON is converted:
+C_THRUSTER_ON = M_THRUSTER_VOLTAGE * 100.0 / M_BATTERY_INST
+
+## Thruster mode 3: depth rate feedback control
+Depth rate feedback control.  Dive, Climb and Surface only (no drift_at_depth)
+For use_thruster=3, thruster_value specifies the desired depth rate that we wish to maintain.  Note that the desired depth rate for climbs and surface behaviors should be negative.
+The following sensors are relevant this mode:
+# We use the thruster to maintain a desired depth rate
+sensor: u_ap_thruster_delta_cmd(%) 10       # how much to increment thruster command to maintain depth rate
+sensor: u_ap_thruster_depth_rate_deadband(m/s) 0.02 # Allow depth rate between +/- this amount
+sensor: u_thruster_ap_period(s) 30 # How often to run immediately after each command
+sensor: u_depth_rate_thr_avg_num(enum) 3 # the number of data samples to collect for the m_depth_rate_thr_avg calculation. 
+sensor: m_depth_rate_thr_avg_final(m/s) 0.0 # Final value of the calculation
+sensor: x_thruster_state(enum) -1 # Out, why dc_c_thruster_on was commanded. Describes the state of the thruster controller
+	
+## Thruster mode 4: power feedback control
+For use_thruster=4, thruster_value specifies the desired power that we wish to maintain. 
+The thruster_value must be between F_THRUSTER_POWER_MIN and F_THRUSTER_POWER_MAX, otherwise the mission will abort upon initialization.
+After receiving an updated average power (M_AVG_THRUSTER_POWER), we adjust the C_THRUSTER_ON command by delta_command.
+If U_AP_THRUSTER_POWER_P_GAIN > 0, then
+delta_command = U_AP_THRUSTER_POWER_P_GAIN * M_THRUSTER_POWER_ERROR
+otherwise, 
+delta_command = U_AP_THRUSTER_DELTA_CMD
+The following sensors are relevant this mode:
+sensor: x_thruster_state(enum) -1 # Out, why dc_c_thruster_on was commanded. Describes the state of the thruster controller
+sensor: u_ap_thruster_power_deadband(watt) 0.5 # In, allow power between +/- this amount
+sensor: m_thruster_power_error(watt) 0 # Out, cmd - meas
+sensor: u_ap_thruster_power_p_gain(nodim) 0 # 
+sensor: u_ap_thruster_delta_cmd(%) 10       # how much to increment thruster command to maintain depth rate/power
+sensor: m_avg_thruster_power(watt) 0 # Out, average measured power
+sensor: f_thruster_power_max(watt) 10.0 # In, maximum allowable average thruster power.  
+sensor: f_thruster_power_min(watt) 1.0 # In, minimum allowable average thruster power. 
+
+
+Thruster surface burst
+---------------------
+The purpose of the thruster surface burst is to remove buildup on the thruster.
+If thruster/thruster_g1 is in use, we turn on thruster before getting final GPS fix before diving.
+The following sensors define the nature of the burst:                                    
+sensor: u_thruster_burst_volts(volts) 6 # In, command voltage for thruster
+sensor: u_thruster_burst_secs(sec) 15 # In, turn on thruster for this long
+
+It is enabled by default in the surface behavior:
+
+    b_arg: thruster_burst(bool)         1          # Behavior argument to turn thruster on
+                                       
+
+Limiting thruster command
+---------------------
+Software will clip the thruster command such that the estimated input voltage:
+input_voltage = M_BATTERY_INST*DC_C_THRUSTER_ON/100.0
+is greater than F_THRUSTER_MIN_V and less than F_THRUSTER_MIN_V
+
+There are error reporting methods that monitor over or under power (see Error Reporting section)
+
+
+Thruster activation
+---------------------
+Once the behavior has been activated, the thruster controller waits U_THRUSTER_INFLECTION_HOLDOFF seconds
+until it turns the thruster on.  
+
+
+Thruster state
+---------------------
+The reason why or why not the thruster was commanded is recorded in X_THRUSTER_STATE:
+sensor: x_thruster_state(enum) -1 # Out, why dc_c_thruster_on was commanded. Describes the state of the thruster controller 
+ 0: Thruster mode not enabled 
+ 1: Constant thruster command, use_thruster = 1 (command % mode)
+The following states apply to use_thruster=2 (command depth rate)
+ 2: Increased thruster (M_DEPTH_RATE_THR_AVG_FINAL < command) 
+ 3: Decreased thruster (M_DEPTH_RATE_THR_AVG_FINAL > command) 
+ 4: Did not adjust thruster, M_DEPTH_RATE_THR_AVG_FINAL within command and U_AP_THRUSTER_DEPTH_RATE_DEADBAND limits # 5: Did not adjust thruster, not enough time has elapsed since last command (X_THRUSTER_AP_PERIOD) 
+ 6: Did not adjust thruster, not enough depth rate samples U_DEPTH_RATE_THR_RUNNING_AVG_NUM 
+The following states apply to all thruster modes
+ 7: Off, because inflecting or within the u_thruster_inflection_holdoff time period. 
+ 8: Off, because measured pitch is in the wrong direction (i.e. m_pitch < 0 on a climb)
+ 9: On, Thruster burst mode (surface behavior: b_arg: thruster_burst
+
+Thruster command status (essentially the mode and value from the active b_arg)
+is recorded in CC_[FINAL_]THRUSTER_MODE and CC_[FINAL_]THRUSTER VALUE.
+
+
+Lens Penetration
+====================
+Description
+---------------------
+The thruster can be used to 'punch' through a lower-density surface region.  To enable this behavior,
+the thruster is operated using depth rate control mode (b_arg: use_thruster = 3) in the surface and/or yo behaviors.  
+The thruster is commanded to maintain a minimum depth rate (b_arg: thruster_value), such that if a lens causes the
+glider to slow down, the thruster will be commanded on.
+  
+In addition, a new surface behavior 'completion' mode may be enabled:
+Normally, a surface behavior completes once the glider reaches U_REQD_DEPTH_AT_SURFACE.  In real operations, there can be 
+some drift in the pressure transducer.  Therefore, in scenarios where the thruster is required to get the glider to the surface,
+we only want to turn off the thruster when we are very confident that we are at the surface.
+The new surface behavior mode ends when the surface depth is reached AND some other requirements are met (see /doco/how-it-works/lens_penetration_logic.pdf).
+For example, the primary method is that the surface depth is reached, a large vacuum differential has been measured and the glider is pitching down (the last two metrics 
+pointing to the air bladder inflating).
+Note that this behavior will sometimes cause the thruster to turn on unnecessarily for a few seconds at the surface while the air bladder inflates.  
+
+
+Sample .ma files
+---------------------
+behavior: surface
+  b_arg: c_stop_when_air_pump(bool)  1           #! terminate climb once air pump has been inflated
+  b_arg: c_use_thruster(enum)   3  # 3  Command depth rate.    
+  b_arg: c_thruster_value(X)   -0.08 # use_thruster == 3  m/s, desired depth rate. <0 for climb
+
+behavior: yo
+  b_arg: c_use_thruster(enum)   3  # 3  Command depth rate.    
+  b_arg: c_thruster_value(X)   -0.08 # use_thruster == 3  m/s, desired depth rate. <0 for climb
+
+
+Sensor monitoring
+---------------------
+The following sensors describe when the thruster has been turned on in depth rate control mode, either during
+a sufacing event or during the entire mission segment.  They lend visibility into whether or not the thruster 
+is getting turned on.
+It may be useful to add these sensors to config.srf
+
+sensor: c_thruster_surface_secs(s) 0 # out, How long the thruster has been on in depth rate mode for this surfacing
+sensor: c_thruster_depth_rate_secs(s) 0 # out, How long the thruster has been on in depth rate mode for the entire segment
+sensor: c_thruster_surface_depth(m) 0 # out, What depth the thruster first turned on (in depth rate mode) for this surfacing
+sensor: c_thruster_depth_rate_depth(m) 0 # out, What depth the thruster first turned on (in depth rate mode) for the entire segment
+	
+
+Steering control
+====================
+The steering controller (see /doco/how-it-works/heading_autopilot.txt) uses a PID based controller to command
+fin position:
+percent C_FIN = -X_FIN_MAX*((X_HD_FIN_AP_GAIN  * M_HDG_ERROR) 
+		+(X_HD_FIN_AP_IGAIN * M_HDG_IERROR)
+		+(X_HD_FIN_AP_DGAIN * M_HDG_DERROR))
+Whenever the thruster is in use (C_THRUSTER_ON > 0), the X_HD_FIN_AP gains will be set to the following
+thruster specific-values:
+x_hd_fin_ap_gain = u_thruster_hd_fin_ap_gain
+x_hd_fin_ap_igain = u_thruster_hd_fin_ap_igain
+x_hd_fin_ap_dgain = u_thruster_hd_fin_ap_dgain
+
+
+
+Pitch control
+====================
+Similar to the steering control, there are a number of gains and deadbands that get set according to whether
+or not the thruster is in use:
+sensor: x_pitch_ap_gain(1/rad) -3.0 
+sensor: x_pitch_ap_dgain(s/rad) 1.0
+sensor: x_pitch_ap_deadband(rad) 0.0524
+
+
+
+Vehicle speed estimation
+====================
+When the thruster is running, we estimate the horizontal speed through the water 
+either through the traditional technique (depth rate and pitch angle) if the pitch 
+angle is large enough and we are measured to be moving vertically.  If either of those
+cases are false, then we estimate speed using another method, depending on the thruster
+motor controller style:
+
+If thruster device 'thruster' (motor controller with electrical current feedback) is in use, 
+then sensor X_THRUSTER_HAS_CURRENT_SENSE is true, and we compute the estimated forward speed
+based upon measured motor current. This function uses a 2nd order relationship between current
+and forward speed.
+The constants i[0-2] are determined off-line, based upon the glider drag characteristics and 
+propeller/motor combination.
+M_THRUSTER_EST_SPEED = F_THRUSTER_I2*pow(M_THRUSTER_CURRENT,2)  + F_THRUSTER_I1*M_THRUSTER_CURRENT + F_THRUSTER_I0
+
+If thruster device 'thruster_g1' (motor controller without electrical current feedback) is
+in use, then sensor X_THRUSTER_HAS_CURRENT_SENSE is false, and we compute the estimated
+forward speed based upon measured motor current. This function uses a linear relationship 
+between voltage and forward speed.
+The constants v_0 and v_1 are determined off-line, based upon the glider drag characteristics and propeller/motor combination.
+M_THRUSTER_EST_SPEED = F_THRUSTER_V1*input_voltage + F_THRUSTER_V0
+where input_voltage is the estimated input voltage to the thruster, M_BATTERY_INST*C_THRUSTER_ON/100
+
+Software clips the estimated speed by sensor U_MAX_THRUSTER_SPEED.
+
+
+
+Energy monitoring and error reporting
+====================
+We monitor a number of energy characteristics specific to the thruster
+
+Sensors for 'thruster' and 'thruster_g1' devices:
+---------------------
+sensor: m_thruster_voltage(volts) 0 #Out, estimated input voltage to thruster. = C_THRUSTER_ON*M_BATTERY_INST/100
+
+
+Sensors for 'thruster' device only
+---------------------
+sensor: u_avg_thruster_power_num(nodim) 10 # Number of samples to use for m_avg_thruster_power
+sensor: m_avg_thruster_power(watt) 0 # Out, average measured power
+sensor: f_thruster_power_max(watt) 10.0 # In, maximum allowable average thruster power
+sensor: f_thruster_power_min(watt) 1.0 # In, minimum allowable average thruster power, for use_thruster=4
+                                        
+sensor: m_thruster_power_spike(enum) 0 # Running tally of power spikes above f_thruster_power_max
+sensor: m_thruster_voltage(volts) 0 #Out, estimated input voltage to thruster. = C_THRUSTER_ON*M_BATTERY_INST/100
+sensor: m_thruster_power(watt) 0 #Out m_thruster_voltage * m_thruster_current
+sensor: m_thruster_amphr(amp-hrs) 0 #Out, integrated current
+sensor: m_thruster_watthr(watt-hrs) 0 #Out, integrated power
+
+
+Error reporting
+---------------------
+'thruster' device:  A running average of measured thruster current M_THRUSTER_CURRENT is calculated every cycle that the thruster is commanded on.  The average is calculated using U_AVG_THRUSTER_CURRENT_NUM samples. If the average M_AVG_THRUSTER_CURRENT is above the threshold U_MAX_THRUSTER_CURRENT, or is equal to 0, then a device error is returned and the mission is aborted.
+
+
+
+Drift_at_depth specifics
+====================
+There are several methods to maintain depth.  The desired method is specified using the depth_ctrl b_arg:
+    b_arg: depth_ctrl(enum)          0 # Method to perform depth control
+    				   # 0: Default mode for buoyancy drive only drift_at_depth. increment by bpump_delta_value
+    				   # 1: servo bpump on depth:  see 'bpump servo mode' sensors
+    				   # 2: Recommended mode for thruster control. pitch-based depth control: see 'pitching depth control mode' sensors
+
+
+
+Depth Control Method 0: Bpump-based depth control
+---------------------
+Historically, depth control has been achieved using method 0--incrementing or decrementing the ballast pumped
+to maintain depth.  Generally, the user specifies to servo the pitch battery at 0 deg--therefore, all vertical
+movement is provided by the bouyancy drive.
+While this method works well at near-zero forward speed, thruster-assisted flight encounters issues as depth-pitch
+coupling comes into play.  The dynamic response of buoyancy-driven depth control are much slower than pitch.  It is
+recommended to use pitch-based depth control (mode 2) for thruster-assisted horizontal flight.  
+
+
+Depth Control Method 1: Servo bpump-based depth control
+---------------------
+Similar to Method 0, except we use a Proportional-Derivative (PD) controller on depth error and rate to command changes in ballast pumped.
+Note: this method has not been tested!
+
+
+Depth Control Method 2: Pitch-based depth control
+---------------------
+Pitch-based depth control uses a combination of pitch (and therefore thruster) and bouyancy drive to maintain depth.  A PID controller (the same controller used for heading, /doco/how-it-works/heading_autopilot.txt) on depth error outputs the pitch command:
+C_PITCH = -(Kp*M_DEPTH_ERROR + Ki*M_DEPTH_IERROR + Kd*M_DEPTH_DERROR)
+where: 
+Kp = X_HOVER_DEPTH_P_GAIN
+Ki = b_arg: depth_i_gain
+Kd = b_arg: depth_d_gain
+M_DEPTH_ERROR = M_DEPTH - X_TARGET_HOVER_DEPTH
+M_DEPTH_IERROR = integrated error
+M_DEPTH_DERROR = time derivative of error
+C_PITCH is limited by sensor X_HOVER_DEPTH_PITCH_LIMIT (b_arg: depth_pitch_limit - X_PITCH_AP_DEADBAND), such that we do not waste too much energy in maintaining depth using 
+the thruster (see below on when bpump control is activated).
+The normal pitch servo control serves to achieve and maintain the C_PITCH command (see the thruster-specific sensors in the 'Pitch control' section of this doco).  
+
+The derivative gain Kd and integral gain Ki are constant.  However, the proportional gain Kp can be declared either a constant or a function of
+the estimated glider speed.  If b_arg: depth_gain_scale is false, then X_HOVER_DEPTH_P_GAIN=b_arg: depth_p_gain. 
+If b_arg: depth_gain_scale is true, then we calculate X_HOVER_DEPTH_P_GAIN as follows:
+X_HOVER_DEPTH_P_GAIN = U_HOVER_DEPTH_GAIN_SCALE_M * abs(M_THRUSTER_EST_SPEED) + U_HOVER_DEPTH_GAIN_SCALE_B
+
+Bouyancy control will become activated under two conditions:
+- The commanded pitch has been at max b_arg: depth_pitch_limit and commanded battpos has not changed for
+  b_arg: depth_pitch_max_time seconds
+- The depth rate is less than U_HOVER_DEPTH_PITCH_DEADBAND and M_PITCH is greater than deadband X_PITCH_AP_DEADBAND
+When either of these conditions are met, we then adjust the ballast pump using Method 0 in addition to the pitch control.
+
+Note that this mode is not appropriate for non-thruster missions--at very low speed, there will not be enough lift force to create the vertical changes required.
+
+
+Drift_at_depth Steering Control
+---------------------
+Note that steering is by default not enabled for the drift_at_depth behavior.  Toggle it on by setting the following
+b_arg to true
+    b_arg: enable_steering(bool) 1
+
+
+Abend thruster control
+====================
+The abend b_arg: use_thruster_for_ascent allows you to specify if the thruster should be activated for speed control during an abort.  
+The same thruster depth rate control used in use_thruster=3 maintains a depth rate of U_MIN_THRUSTER_ABORT_ASCENT_RATE.
+We hold off U_THRUSTER_ABORT_INFLECTION_HOLDOFF seconds before checking if depth rate control is needed.
+
+
+Controls available to user
+====================
+Behaviors
+---------------------
+behavior: yo
+    b_arg: d_use_thruster(enum)   0                #! choices = use_thruster	
+    b_arg: d_thruster_value(X)   0.0               #! min = minThruster; max = maxThruster	
+    b_arg: c_use_thruster(enum)   0                #! choices = use_thruster	
+    b_arg: c_thruster_value(X)   0.0             #! min = minThruster; max = maxThruster
+
+behavior: dive_to/climb_to
+    b_arg: use_thruster(enum)   0               # 0  Not in use
+                                       # 1  Command input voltage (as % of glider voltage)
+                                       # 2  Command input voltage (as % of max thruster input voltage)
+                                       # 3  Command depth rate.  See sensors for use_thruster = depthrate depthrate														
+    b_arg: thruster_value(X)   0.0              # use_thruster == 0  None
+                                       # use_thruster == 1  %, desired % of glider voltage, between [0, 100] (will be clipped to F_THRUSTER_MAX_V)
+                                       # use_thruster == 2  %, desired % of F_THRUSTER_MAX_V, between [0, 100]     
+                                       # use_thruster == 3  m/s, desired depth rate. >0 for dive, <0 for climb
+                                       # use_thruster == 4  Command input power. See sensors for use_thruster = power	
+    										
+    									   
+behavior: drift_at_depth
+    b_arg: depth_ctrl(enum)          0 # 0: increment by bpump_delta_value
+                                       # 1: servo bpump on depth:  see 'bpump servo mode' sensors
+                                       # 2: pitch-based depth control: see 'pitching depth control mode' sensors  
+    b_arg: use_thruster(enum)   0               # 0  Not in use
+                                       # 1  Command input voltage (as % of glider voltage)
+                                       # 2  Command input voltage (as % of max thruster input voltage)
+                                       # 3  n/a for this behavior
+                                       # 4  Command input power. See sensors for use_thruster = power
+    b_arg: thruster_value(X)   0.0              # use_thruster == 0  None
+                                       # use_thruster == 1  %, desired % of glider voltage, between [0, 100] (will be clipped to F_THRUSTER_MAX_V)
+                                       # use_thruster == 2  %, desired % of F_THRUSTER_MAX_V, between [0, 100]     	
+                                       # use_thruster == 4  watt, desired input power
+ 
+    b_arg: enable_steering(bool) 0	 # Enable or disable steering while hovering. If True, heading is
+					# controlled as normal (set_heading, goto_list etc) during hovering. If False,
+					# commanded fin position = 0 during hovering.
+    b_arg: d_use_thruster(enum)   0               # 0  Not in use
+                                       # 1  Command input voltage (as % of glider voltage)
+                                       # 2  Command input voltage (as % of max thruster input voltage)
+                                       # 3  Command depth rate.  See sensors for use_thruster = depthrate
+                                       # 4  Command input power. See sensors for use_thruster = power										
+    b_arg: d_thruster_value(X)   0.0              # use_thruster == 0  None
+                                       # use_thruster == 1  %, desired % of glider voltage, between [0, 100] (will be clipped to F_THRUSTER_MAX_V)
+                                       # use_thruster == 2  %, desired % of F_THRUSTER_MAX_V, between [0, 100]     
+                                       # use_thruster == 3  m/s, desired depth rate. >0 for dive
+                                       # use_thruster == 4  watt, desired input power
+    b_arg: c_use_thruster(enum)   0               # 0  Not in use
+                                       # 1  Command input voltage (as % of glider voltage)
+                                       # 2  Command input voltage (as % of max thruster input voltage)
+                                       # 3  Command depth rate.  See sensors for use_thruster = depthrate
+                                       # 4  Command input power. See sensors for use_thruster = power
+    b_arg: c_thruster_value(X)   0.0              # use_thruster == 0  None
+                                       # use_thruster == 1  %, desired % of glider voltage, between [0, 100] (will be clipped to F_THRUSTER_MAX_V)
+                                       # use_thruster == 2  %, desired % of F_THRUSTER_MAX_V, between [0, 100]     
+                                       # use_thruster == 3  m/s, desired depth rate. <0 for climb	
+                                       # use_thruster == 4  watt, desired input power
+    	# Arguments for pitch depth controller (depth_ctrl = 2 )
+    b_arg: depth_pitch_limit(rad) 0.174	  #limit pitch response to 10 deg
+    b_arg: depth_gain_scale(bool) 0 # whether or not to use X_HOVER_DEPTH_P_GAIN = m * speed + b								
+    b_arg: depth_p_gain(X) -0.15	  	#proportional gain: should always be < 0.  See X_HOVER_DEPTH_P_GAIN
+    b_arg: depth_i_gain(X) 0	  			#integral gain: should be < 0
+    b_arg: depth_d_gain(X) 0	  			#derivative gain: should be > 0
+    b_arg: depth_pitch_deadband(m/s) 0.0349	#don't adjust bouyancy until depth rate is less than this
+    b_arg: depth_pitch_max_time(s) 60 # Max time at maximum u_hover_depth_pitch_limit before we start to adjust ballast
+    	
+    	    											  
+behavior: surface
+    b_arg: c_use_thruster(enum)   0               # 0  Not in use
+                                       # 1  Command input voltage (as % of glider voltage)
+                                       # 2  Command input voltage (as % of max thruster input voltage)
+                                       # 3  Command depth rate.  See sensors for use_thruster = depthrate
+                                       # 4  Command input power. See sensors for use_thruster = power
+    b_arg: c_thruster_value(X)   0.0              # use_thruster == 0  None
+                                       # use_thruster == 1  %, desired % of glider voltage, between [0, 100] (will be clipped to F_THRUSTER_MAX_V)
+                                       # use_thruster == 2  %, desired % of F_THRUSTER_MAX_V, between [0, 100]     
+                                       # use_thruster == 3  m/s, desired depth rate. <0 for climb
+                                       # use_thruster == 4  watt, desired input power
+    b_arg: c_stop_when_air_pump(bool)  0           #! terminate climb once air pump has been inflated
+    b_arg: thruster_burst(bool)         1          # Behavior argument to turn thruster on
+                                       #If thruster/thruster_g1 is in use, turn on thruster to remove buildup before getting final GPS fix before diving.
+                                       #See 'u_thruster_burst_' sensors
+
+
+
+Sensors (search for the following comments in masterdata)
+---------------------
+# dynamic_control.c thruster parameters
+
+# thruster.c
+
+# --- layered_control.c
+
+# drift_at_depth
+
+# Heading autopilot variables
+
+# Pitch servo control
+
+# get_est_horz_speed_thruster()
+
+
+
+
+
+	

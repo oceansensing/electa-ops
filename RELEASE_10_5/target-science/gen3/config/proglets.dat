@@ -1,0 +1,1569 @@
+# proglets.dat
+#
+# This file specifies the configuration of a science computer in a Webb
+# Research Glider.  This version is for the 3rd generation science controller.
+#
+# This is an example only, you must configure it for a specific glider.
+#
+# 04-Jun-03 tc@DinkumSoftware.com Initial
+# 06-Jun-03 tc@DinkumSoftware.com Initial, ctd41cp only
+# 18-Jun-03 tc@DinkumSoftware.com Added ctd41cp_sim
+# 23-Jun-03 tc@DinkumSoftware.com Added start_snsr=c_profile_on
+# 24-Jun-03 tc@DinkumSoftware.com Added bb2f
+# 25-Jun-03 tc@DinkumSoftware.com Added whpar
+# 02-Jul-03 tc@DinkumSoftware.com Commented out everything
+# 03-Jul-03 tc@DinkumSoftware.com Added ctd41
+# 06-Jul-03 tc@DinkumSoftware.com Added bb2c, bb2lss, sam
+# 07-Jul-03 tc@DinkumSoftware.com bug fix, juggled bb2c(29)/sam(30 bits
+#                                 to avoid 24/28 as used by uart4 to turn
+#                                 RS-232 drivers on
+# 17-Aug-03 tc@DinkumSoftware.com Added proglet whgpbm
+# 05-Oct-03 tc@DinkumSoftware.com DREA support, renamed proglet hps->hydrophone
+# 26-Oct-03 tc@DinkumSoftware.com Added proglet hard_disk
+# 25-Jun-04 tc@DinkumSoftware.com Added proglet MoteBB
+# 08-Dec-04 pfurey@DinkumSoftware.com Added proglets bbfl2s and oxy3835
+# 14-Feb-05 pfurey@DinkumSoftware.com Added proglet viper
+# 10-Mar-05 pfurey@DinkumSoftware.com Added proglet whfctd
+# 20-Sep-05 pfurey@DinkumSoftware.com Added proglets fl3slo and bb3slo, added
+#                                     doco specifying which proglets have
+#                                     sensor specific calibration constants.
+# 20-Dec-05 pfurey@DinkumSoftware.com Added c_bam_on(sec) sensor.
+# 05-Jan-06 pfurey@DinkumSoftware.com Added sensor specific calibration 
+#                                     constants to bbfl2s.
+# 03-Feb-06 pfurey@DinkumSoftware.com Added proglets ocr504R and ocr504I.
+# 13-Mar-06 pfurey@DinkumSoftware.com Fixed typo in doco for bbfl2s
+# 14-Apr-06 pfurey@DinkumSoftware.com Added proglet badd
+# 11-Aug-06 pfurey@DinkumSoftware.com Added proglet flntu
+# 14-Aug-06 pfurey@DinkumSoftware.com Added proglets bb3sloV2 and fl3sloV2.
+# 23-Aug-06 pfurey@DinkumSoftware.com Added proglets ocr507R and ocr507I.
+# 12-Oct-06 pfurey@DinkumSoftware.com Added proglet bb3sloV3
+# 15-Oct-06 pfurey@DinkumSoftware.com Added wetlabs_sim to proglets
+# 23-Oct-06 pfurey@DinkumSoftware.com Added proglets bb2fls and bb2flsV2
+# 27-Oct-06 pfurey@DinkumSoftware.com Fixed typo in flntu comments and
+#                                     added u_XXX_is_calibrated to proglet
+#                                     doco.
+# 15-Nov-06 moose@Dinkumsoftware.com  Added proglet oxy3835_wphase.
+# 05-Jan-07 pfurey@DinkumSoftware.com Added proglet auvb.
+# 11-Apr-07 pfurey@DinkumSoftware.com Added proglet bb2fV2
+# 16-May-07 pfurey@webbresearch.com   Added proglet tarr
+# 06-Aug-07 pfurey@webbresearch.com   Added proglet nbctd
+# 11-Oct-07 pfurey@webbresearch.com   Added proglet bbfl2sV2
+# 05-Nov-07 wayne.pearson@nrc-cnrc.gc.ca Added proglet glbps.
+# 29-Jan-08 pfurey@webbresearch.com   Added sscsd proglet
+#           for smith@spaware.nave.mil
+# 06-Feb-08 pfurey@webbresearch.com   Added bit=30 line to moteBB
+#           for request of Alan Hails.
+# 12-Apr-08 dbp@webbresearch.com      Added proglet bb2fV3
+# 04-May-08 peter@fureysoftware.com   Added FIRe proglet
+# 23-jun-08 dpingal@webbresearch.com  Added proglet ohf
+# 14-jul-08 dpingal@webbresearch.com  Added proglet bb2fV4, fixed bb2fV4, bb2c 
+# 18-jul-08 dpingal@webbresearch.com  Added proglet bb2fV5 
+# 6-apr-09  dpingal@webbresearch.com  Added proglet logger
+# 9-apr-09  dpingal@webbresearch.com  Added proglet bbam
+# 07-May-09 pfurey@webbresearch.com   Added proglet uModem
+# 10-Sep-09 fmarcelino@webbresearch.com Added new proglet template for CTD41CP
+#                                       which describes hardware configuration for new CTD hardware
+# 14-Sep-09 pfurey@webbresearch.com   Added proglet rinkoII
+# 18-Sep-09 pfurey@webbresearch.com   Added proglet dvl
+# 21-Oct-09 dpingal@webbresearch.com  Added bb2flsV6 proglet
+# 2010.04.22 pfurey@webbresearch.com  Added flbbrh proglet
+# 2010.04.23 pfurey@webbresearch.com  Added flur proglet
+# 2010.05.20 pfurey@webbresearch.com  Added bb2flsV7 and flbbcd proglets
+# 2010.06.17 pfurey@webbresearch.com  Added dmon proglet
+# 2010.07.01 pfurey@teledyne.com  Added c3sfl proglet
+# 2010.08.10 fmarcelino@teledyne.com  Added suna proglet
+# 2010.09.21 fmarcelino@teledyne.com  Resolved Mantis #785
+# 2010-09-22 www.DinkumSoftware.com/tc Added avbot_proglet
+# 2010-09-30 fmarcelino@teledyne.com  Added logger shutdown bit to logger proglet Mantis #793
+# 2010-10-22 DinkumSoftware.com/tc    Added avbot_proglet doco
+# 2011-02-02 pfurey@teledyne.com  Added bbam_sim
+# 2011-02-07 pfurey@teledyne.com  Added auvb_sim
+# 2011-02-08 pfurey@teledyne.com  Added satpar proglet
+# 2011-04-05 pfurey@teledyne.com  Added vsf proglet
+# 2011-04-13 pfurey@teledyne.com  Added oxy4330f proglet
+# 2011-04-27 pfurey@teledyne.com  Added gamma_rad5 proglet
+# 2011-06-13 pfurey@teledyne.com  Added bsipar proglet
+# 2011-12-20 pfurey@teledyne.com  Added flbb proglet
+# 2012-01-25 fmarcelino@teledyne.com  Added ctd41cp2 proglet
+# 2012-02-22 fmarcelino@teledyne.com Added badd_mmp proglet
+# 2012-04-20 pfurey@teledyne.com  Replace oxy4330f with oxy4
+# 2012-05-03 pfurey@teledyne.com  Added -noclklower comment to dvl proglet
+# 2012-07-09 pfurey@teledyne.com(for ahails@mote.org) Replaced references to obsolete
+#                                 proglet MoteBB with new proglet MoteOPD
+# 2012-08-24 pfurey@teledyne.com  Removed the hs2 proglet to make supersci.app smaller
+# 2012-09-04 pfurey@teledyne.com  Removed whpar proglet.
+# 2012-09-05 pfurey@teledyne.com  Removed ohf proglet.
+# 2012-09-06 pfurey@teledyne.com  Removed avbot proglet.
+# 2012-09-07 pfurey@teledyne.com  Removed whgpbm proglet.
+# 2013-01-28 fmarcelino@teledyne.com  Added echosndr853 proglet (Imagenex)
+# 2014-03-19 mbrissette@teledyne.com  Added flrh proglet (WetLabs)
+# 2014-04-07 mbrissette@teledyne.com  RinkoII, added support for data selection,Physical 0 and Engineering 1 (Mantis #1863)
+# 2014-04-22 mbrissette@teledyne.com  Added bb2flsV8 proglet (WetLabs)
+# 2014-04-22 mbrissette@teledyne.com  Removed proglets badd_mmp and bsipar
+# 2014-05-01 mbrissette@teledyne.com  Reinserted proglets badd_mmp and bsipar, removed gamma_rad5 (Mantis #1895)
+# 2014-07-01 dpingal@teledyle.com  Copied proglets.dat -> proglet2.dat, changed
+#                                  power bits to defaults for sbm2
+# 2014-10-30 mbrissette@teledyne.com  Added uviluxPAH proglet, Mantis 2116
+# 2015-05-20 mbrissette@teledyne.com  Added ad2cp proglet
+# 2015-07-22 mbrissette@teledyne.com  Added miniProCO2 proglet
+# 2015-07-27 mbrissette@teledyne.com  Added pCO2 proglet, Mantis 2480
+# 2015-08-20 mbrissette@teledyne.com  Fixed power bits/descriptions, Mantis 2533
+# 2016-02-01 mbrissette@teledyne.com  Added seaOWL proglet, Mantis 2848
+# 2016-05-31 mbrissette@teledyne.com  Added azfp proglet, Mantis 2761
+# 2016-08-23 mbrissette@teledyne.com  Added ubat proglet, Mantis 3225
+# 2017-01-20 mbrissette@teledyne.com  Mantis 3455: Updated SBMB2 'proglets.dat' to reflect logger options
+# 2017-01-24 mbrissette@teledyne.com  Added lisst proglet, Mantis 3379
+# 2017-04-28 mbrissette@teledyne.com  Added lms proglet, Mantis 3659
+# 2017-05-24 mbrissette@teledyne.com  Added svs603 proglet, Mantis 3520
+# 2017-06-05 mbrissette@teledyne.com  Manits 3750: SBMB2 cannot use J14(CMOS for CTD), updated ctd41 bits
+# 2017-08-08 mbrissette@teledyne.com  Added microRider proglet, Mantis 3812
+# 2017-09-25 mbrissette@teledyne.com  Added bb2flsV9 proglet, Mantis 3924
+# 2017-10-16 mbrissette@teledyne.com  Mantis 3951: Add VEMCO vr2c proglet entries to proglets.dat files and add VR2C_CFG.0 and 1
+# 2017-10-25 mbrissette@teledyne.com  Added sbe41n_ph proglet, Mantis 3925
+# 2017-11-03 mbrissette@teledyne.com  Mantis 4002: Need comments in proglets.dat about use of CMOS port (J14 on SBMB2)
+# 2018-01-08 mbrissette@teledyne.com  Added fl2UrRh proglet, Mantis 4151
+# 2018-06-22 mbrissette@teledyne.com  Added flbbbbV1 and flbbbbV2 proglets, Mantis 4502
+# 2018-08-14 mbrissette@teledyne.com  Added obsvr proglet, Mantis 3926
+# 2018-11-09 mbrissette@teledyne.com  Added fl2PeCdom proglet, Mantis 4746
+# 2018-11-09 mbrissette@teledyne.com  Added wetlabs1, wetlabs2, and wetlabs3 generic proglets, Mantis 4747
+# 2018-11-09 mbrissette@teledyne.com  Added rbrctd proglet, Mantis 4758
+# 2019-05-02 mbrissette@teledyne.com  Mantis 4964: Generic WetLab puck proglets renaming
+# 2019-07-19 mbrissette@teledyne.com  Added echodroid proglet, Mantis 5005
+# 2020-01-08 mbrissette@teledyne.com  Added tau proglet, Mantis 5330
+# 2020-06-05 mbrissette@teledyne.com  Added rbrodo proglet, G3S-381
+# 2020-10-29 mbrissette@teledyne.com  Added solocam proglet, G3S-406
+# 2020-11-17 mbrissette@teledyne.com  Added amar proglet, G3S-408
+#
+# Table of contents
+#
+# hard_disk    BI-25, hard disk disk support
+# ctd41cp      Sea-bird CTD(SBE-41CP) continuous profiling
+#              simulator: ctd41cp_sim
+# ctd41        Sea-bird CTD(SBE-41) "old" pulsed style
+#              simulator: ctd41cp_sim
+# nbctd        Neil Brown CTD (W.H.O.I.)
+# bb2f         wet labs bb2f fluorometer / backscatter sensor
+# bb2fV2       wet labs bb2f fluorometer / backscatter sensor
+# bb2c         wet labs, bb2c sensor
+# bb2lss       wet labs, Light Scatter Sensor
+# bbfl2s       wet labs bbfl2slo: custom 3-param fluorescence/scattering meter
+#              simulator: wetlabs_sim
+# bbfl2sV2     wet labs bbfl2slo: custom 3-param fluorescence/scattering meter,
+#              2nd configuration, simulator: wetlabs_sim
+# bb2fls       wet labs bb2flslk: custom 3-param scattering meter/fluorometer,
+#              simulator: wetlabs_sim
+# bb2flsV2     wet labs bb2flslk: custom 3-param scattering meter/fluorometer,
+#              2nd configuration. simulator: wetlabs_sim 
+# bb2flsV3     wet labs bb2flslk: custom 3-param scattering meter/fluorometer,
+#              3rd configuration. simulator: wetlabs_sim 
+# bb2flsV4     wet labs bb2flslk: custom 3-param scattering meter/fluorometer,
+#              4th configuration. simulator: wetlabs_sim 
+# bb2flsV5     wet labs bb2flslk: custom 3-param scattering meter/fluorometer,
+#              5th configuration. simulator: wetlabs_sim 
+# bb2flsV6     wet labs bb2flslk: custom 3-param scattering meter/fluorometer,
+#              6th configuration. simulator: wetlabs_sim 
+# bb2flsV7     wet labs bb2flslk: custom 3-param scattering meter/fluorometer,
+#              7th configuration. simulator: wetlabs_sim 
+# bb2flsV8     wet labs bb2flslk: custom 3-param scattering meter/fluorometer,
+#              8th configuration. simulator: wetlabs_sim 
+# bb3slo       wet labs bb3slo: backscatter triplet sensor
+#              simulator: wetlabs_sim
+# bb3sloV2     wet labs bb3slo: backscatter triplet sensor, 2nd configuration
+#              simulator: wetlabs_sim
+# bb3sloV3     wet labs bb3slo: backscatter triplet sensor, 3nd configuration
+#              simulator: wetlabs_sim
+# fl3slo       wet labs fl3slo: fluorescence triplet sensor
+#              simulator: wetlabs_sim
+# fl3sloV2     wet labs fl3slo: fluorescence triplet sensor, 2nd configuration
+#              simulator: wetlabs_sim
+# flntu        wet labs flntu: fluorescence and turbidity sensor
+#              simulator: wetlabs_sim
+# sam          wet labs, Scattering Attenuation Meter
+# whgpbm       WHoi Glider Bathy-PhotoMeter
+# whfctd       WHoi Fast CTD
+# bam          Benthos Acoustic Modem
+# hydrophone   DREA hydrophone sampler
+# MoteOPD      Mote Marine Laboratory Optical Phytoplankton Discriminator
+# oxy3835      Aanderaa Oxygen Optode 3835
+# oxy3835_wphase  Aanderaa Oxygen Optode 3835
+# viper        MDA Viper Processor
+# ocr504R      Satlantic OCR-504 Radiance Sensor
+# ocr504I      Satlantic OCR-504 Irrandiance Sensor
+# ocr507R      Satlantic OCR-507 Radiance Sensor
+# ocr507I      Satlantic OCR-507 Irrandiance Sensor
+# badd         Benthos Acoustic Data Delivery system
+# auvb         Wet Labs AUV-B Fluorometer
+# tarr         OASIS Towed Array Receiver/DSP
+# glbps        ASL GLBPS SONAR Device
+# sscsd        SPAWAR Acoustic array
+# FIRe         Fluorescence Induction and Relaxation electronics
+# logger       generic datalogger
+# uModem       W.H.O.I. Acoustic Micro-Modem
+# rinkoII      JFE ALEC CO., RINKO-II disolved oxygen and temperature sensor
+# dvl          TRDI ExplorerDVL
+# flbbrh       Wet Labs fluorometer, scattering meter, and rhodamine sensor.
+#              simulator: wetlabs_sim
+# flur         Wet Labs uranine sensor
+#              simulator: wetlabs_sim
+# flbbcd       Wet Labs fluorometer, scattering meter, and cdom sensor.
+#              simulator: wetlabs_sim
+# dmon         W.H.O.I. Digital Monitor, a passive acoustic monitor.
+# c3sfl        Turner Designs C3 Submersible Fluorometer
+# suna         Satlantic Submersible Ultraviolet Nitrate Analyzer 
+# satpar       Satlantic PAR sensor
+# vsf          Wet Labs Volume Scattering Function meter
+# oxy4         Aanderaa Oxygen Optode 4330F or 4831
+# bsipar       Biospherical Instruments PAR sensor
+# flbb         Wet Labs fluorometer and scattering meter
+# vr2c         Vemco VR2C Submersible, Dual Single-Channel Acoustic Recievers
+# ctd41cp2     CTD41 Continuous Profile 2 (allows to operate 2 CTD pumps at the same time)
+# badd_mmp     Benthos Acoustic Data Delivery system using Modem Management Protocol (MMP) API
+# echosndr853  Imagenext Technology Modem 853 Echo Sounder with Data Logger
+# flrh         Wet Labs Rhodamine Fluorometer sensor
+# uviluxPAH    Chelsea Technologies, Uvilux PAH sensor
+# ad2cp        Nortek, AD2CP Acoustic Doppler Current Profiler
+# miniProCO2   Pro-Oceanus Mini-Pro CO2 sensor
+# pCO2         Aanderaa pCO2 sensor
+# seaOWL       Wet Labs seaOWL sensor, Sea Oil-in-Water Locator
+# azfp         ASL Acoustic Zooplankton Fish Profiler (AZFP), echosounder
+# ubat         Wet Labs Underwater Bioluminescence Assessment Tool (UBAT)
+# lisst        Sequoia Laser In-Situ Scattering and Transmissometry (LISST)
+# lms          Franatech Laser Methane Sensor(LMS)
+# svs603       SeaView Systems Inertial Wave Sensor SVS-603 (SVS603)
+# microRider   Rockland Scientific MicroRider MR-1000 (MICRORIDER)
+# bb2flsV9     Wet Labs bb2flslc: custom 3-param scattering meter/fluorometer,
+#              9th configuration. simulator: wetlabs_sim
+# sbe41n_ph    Sea-bird SBE41N-pH sensor
+# fl2UrRh      Wet Labs fl2slc: Uranine and Rhodamine sensor
+#              simulator: wetlabs_sim
+# flbbbbV1     Wet Labs flbbbbslc: Fluorometer(ug/l), scatter, scatter sensor
+#              simulator: wetlabs_sim
+# flbbbbV2     Wet Labs flbbbbslc: Fluorometer(ppb), scatter, scatter sensor
+#              simulator: wetlabs_sim
+# obsvr        Jasco Observer Hydrophone sensor
+# fl2PeCdom    Wet Labs fl2slc: Phycoerythrin and CDOM sensor
+# wetlabsA     Wet Labs generic proglet A
+# wetlabsB     Wet Labs generic proglet B
+# wetlabsC     Wet Labs generic proglet C
+# rbrctd       RBR logger CTD sensor
+# echodroid    Odroid Echo Sounder sensor
+# tau          Sequoia LISST-Tau, Beam Attenuation Meter sensor
+# rbrodo       RBRcoda T.ODO sensor, Temperature & Dissolved Oxygen Sensor
+# solocam      Williamson camera
+# amar         Jasco Autonomous Multichannel Acoustic Recorder sensor
+#
+# Documentation
+#    uart port encoding list
+#    bitnum encoding list
+#
+#------------------------------------------------------------------------
+# hard_disk
+# A "bi-25" persistor "big idea" hard disk
+# At time of writing, only implemented on drea/drdc hydrophone sampler
+# Hardware: No uarts or pins.  Requires hard disk interface on stack
+#     see glider/doco/science/vender-doco/hydrophone-sampler/<con't>
+#                doco/system-assembly-instructions.txt
+#proglet = hard_disk
+#
+#------------------------------------------------------------------------
+# CTD41CP Sea-bird  CTD(SBE-41), baud rate 9600
+# Continuous Profile Unit
+#
+#proglet = ctd41cp
+#    uart =     j3   # connector
+#    bit  =     0    # power, battery
+#    bit  =     5    # MODE
+#    start_snsr=c_profile_on(sec)
+#    simulator = ctd41cp_sim
+#
+#------------------------------------------------------------------------
+# CTD41CP Sea-bird CTD(SBE-41), baud rate 9600
+# Continuous Profile Unit Single Bit Version
+# NOTE: This proglet is a substitute for the ctd41cp, it uses the
+#       same output sensor names.  Only 1 power bit and the UART is 
+#       different, there is also an initial line of text in the output.
+#proglet = ctd41cp
+#    uart       = j3         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_profile_on(sec)
+#    simulator  = ctd41cp_sim
+#
+#------------------------------------------------------------------------
+# CTD41CP Sea-bird CTD(SBE-41), baud rate 9600
+# Continuous Profile Unit Version 2
+# NOTE: This proglet is functionaly identical to the CTD41CP proglet.
+#       The different being in the name so that two CTD's may operate in the
+#       same glider.  If this proglet is to control the CTD which requires 
+#       two bits, the second bit can be added to this proglet.
+#proglet = ctd41cp2
+#    uart       = j3         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_ctd41cp2_on(sec)
+#    simulator  = ctd41cp2_sim
+#
+#------------------------------------------------------------------------
+# CTD41 Sea-bird  CTD(SBE-41), baud rate 9600
+# "old" pulsed version
+#          Seabird CTD              OES                       Persistor
+#
+#proglet = ctd41
+#    uart =    j14   # CMOS port, connector J14 cannot be used in conjunction with J0
+#    bit  =    16    # power, battery
+#    bit  =    15    # MODE
+#    start_snsr=c_profile_on(sec)
+#    simulator = ctd41cp_sim
+#
+#------------------------------------------------------------------------
+# nbctd      Neil Brown CTD (W.H.O.I), baud rate 9600 
+# NOTE: This proglet is a substitute for the ctd41cp, it uses the
+#       same output sensor names. ONLY one of these two CTDs may be
+#       installed at the same time.
+#proglet = nbctd
+#    uart       = j4         # connector   
+#    bit        = 0          # power, battery
+#    start_snsr = c_profile_on(sec)
+#
+#------------------------------------------------------------------------
+# wet labs bb2f fluorometer / backscatter sensor, baud rate 19200
+#proglet = bb2f
+#    uart       = j4         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_bb2f_on(sec)
+#
+#------------------------------------------------------------------------
+# wet labs bb2fslo fluorometer / backscatter sensor, baud rate 19200
+#proglet = bb2fV2
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_bb2fV2_on(sec)
+#
+#------------------------------------------------------------------------
+# wet labs bb2c, baud rate 19200
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_bb2c_beta532_factor(Mnodim) (see masterdata about Mnodim!)
+#         u_bb2c_beta660_factor(Mnodim)
+#         u_bb2c_beta532_offset(nodim)
+#         u_bb2c_beta660_offset(nodim)
+#         u_bb2c_is_calibrated(bool) 1 # set to 1 after entering 
+#                                       # calibration constants
+#
+#proglet = bb2c
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_bb2c_on(sec)
+#
+#------------------------------------------------------------------------
+# wet labs bb2lss Light Scatter Sensor, baud rate 19200
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_bb2lss_beta880_factor(Mnodim) (see masterdata about Mnodim!)
+#         u_bb2lss_beta880_offset(nodim)
+#         u_bb2lss_is_calibrated(bool) 1 # set to 1 after entering 
+#                                        # calibration constants
+#
+#proglet = bb2lss
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_bb2lss_on(sec)
+#
+#------------------------------------------------------------------------
+# wet labs sam Scattering Attenuation Meter, baud rate 9600
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#	  u_sam_do1(nodim)      
+#	  u_sam_do2(nodim)            
+#	  u_sam_exp1coeff(nodim)      
+#	  u_sam_exp2coeff(nodim)       
+#	  u_sam_offset(nodim)          
+#	  u_sam_eff_pathlength(nodim)  
+#	  u_sam_a(nodim)              
+#	  u_sam_transition_val(nodim)  
+#	  u_sam_median_window(nodim)  
+#         u_sam_is_calibrated(bool) 1 # set to 1 after entering 
+#                                     # calibration constants
+#
+#proglet = sam
+#    uart       = j6         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_sam_on(sec)
+#
+#------------------------------------------------------------------------
+# wet labs bbfl2slo  custom 3-param fluorescence/scattering meter, baud rate 19200
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_bbfl2s_bb_cwo(nodim)         # clean water offset, nodim == counts
+#         u_bbfl2s_chlor_cwo(nodim)      # clean water offset, nodim == counts
+#         u_bbfl2s_cdom_cwo(nodim)       # clean water offset, nodim == counts
+#         u_bbfl2s_bb_sf(Mnodim)         # scale factor to get units
+#         u_bbfl2s_chlor_sf(ug/l/nodim)  # scale factor to get units
+#         u_bbfl2s_cdom_sf(ppb/nodim)    # scale factor to get units
+#         u_bbfl2s_is_calibrated(bool) 1 # set to 1 after entering 
+#                                        # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 3 in autoexec.mi
+#
+#proglet = bbfl2s
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_bbfl2s_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# wet labs bbfl2slo  custom 3-param fluorescence/scattering meter, baud rate 19200
+#                    2nd configuration
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_bbfl2sV2_bb_cwo(nodim)         # clean water offset, nodim == counts
+#         u_bbfl2sV2_fl1_cwo(nodim)        # clean water offset, nodim == counts
+#         u_bbfl2sV2_fl2_cwo(nodim)        # clean water offset, nodim == counts
+#         u_bbfl2sV2_bb_sf(Mnodim)         # scale factor to get units
+#         u_bbfl2sV2_fl1_sf(ug/l/nodim)    # scale factor to get units
+#         u_bbfl2sV2_fl2_sf(ppb/nodim)     # scale factor to get units
+#         u_bbfl2sV2_is_calibrated(bool)   # set to 1 after entering 
+#                                          # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 3 in autoexec.mi
+#
+#proglet = bbfl2sV2
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_bbfl2sV2_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# wet labs bb2flslk  custom 3-param  scattering meter/fluorometer, baud rate 19200
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_bb2fls_b660_cwo(nodim)       # clean water offset, nodim == counts
+#         u_bb2fls_b880_cwo(nodim)       # clean water offset, nodim == counts
+#         u_bb2fls_cdom_cwo(nodim)       # clean water offset, nodim == counts
+#         u_bb2fls_b660_sf(Mnodim)       # scale factor to get units
+#         u_bb2fls_b880_sf(Mnodim)       # scale factor to get units
+#         u_bb2fls_cdom_sf(ppb/nodim)    # scale factor to get units
+#         u_bb2fls_is_calibrated(bool) 1 # set to 1 after entering 
+#                                        # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 3 in autoexec.mi
+#
+#proglet = bb2fls
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_bb2fls_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# wet labs bb2flslk  custom 3-param  scattering meter/fluorometer, baud rate 19200
+#                    2nd configuration
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_bb2flsV2_b470_cwo(nodim)       # clean water offset, nodim == counts
+#         u_bb2flsV2_b532_cwo(nodim)       # clean water offset, nodim == counts
+#         u_bb2flsV2_chl_cwo(nodim)        # clean water offset, nodim == counts
+#         u_bb2flsV2_b470_sf(Mnodim)       # scale factor to get units
+#         u_bb2flsV2_b532_sf(Mnodim)       # scale factor to get units
+#         u_bb2flsV2_chl_sf(ug/l/nodim)    # scale factor to get units
+#         u_bb2flsV2_is_calibrated(bool) 1 # set to 1 after entering 
+#                                          # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 3 in autoexec.mi
+#
+#proglet = bb2flsV2
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_bb2flsV2_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# wet labs bb2flslk  custom 3-param  scattering meter/fluorometer, baud rate 19200 
+#                    3rd configuration
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_bb2flsV3_b715_cwo(nodim)       # clean water offset, nodim == counts
+#         u_bb2flsV3_b880_cwo(nodim)       # clean water offset, nodim == counts
+#         u_bb2flsV3_pe_cwo(nodim)         # clean water offset, nodim == counts
+#         u_bb2flsV3_b715_sf(Mnodim)       # scale factor to get units
+#         u_bb2flsV3_b880_sf(Mnodim)       # scale factor to get units
+#         u_bb2flsV3_pe_sf(ppb/nodim)     # scale factor to get units
+#         u_bb2flsV3_is_calibrated(bool) 1 # set to 1 after entering 
+#                                          # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 3 in autoexec.mi
+#
+#proglet = bb2flsV3
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_bb2flsV3_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# wet labs bb2flslk  custom 3-param  scattering meter/fluorometer, baud rate 19200 
+#                    4th configuration
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_bb2flsV4_b412_cwo(nodim)       # clean water offset, nodim == counts
+#         u_bb2flsV4_b470_cwo(nodim)       # clean water offset, nodim == counts
+#         u_bb2flsV4_chl_cwo(nodim)        # clean water offset, nodim == counts
+#         u_bb2flsV4_b412_sf(Mnodim)       # scale factor to get units
+#         u_bb2flsV4_b470_sf(Mnodim)       # scale factor to get units
+#         u_bb2flsV4_chl_sf(ug/l/nodim)    # scale factor to get units
+#         u_bb2flsV4_is_calibrated(bool) 1 # set to 1 after entering 
+#                                          # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 3 in autoexec.mi
+#
+#proglet = bb2flsV4
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_bb2flsV4_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# wet labs bb2flslk  custom 3-param  scattering meter/fluorometer, baud rate 19200 
+#                    5th configuration
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_bb2flsV5_b532_cwo(nodim)       # clean water offset, nodim == counts
+#         u_bb2flsV5_b660_cwo(nodim)       # clean water offset, nodim == counts
+#         u_bb2flsV5_cdom_cwo(nodim)       # clean water offset, nodim == counts
+#         u_bb2flsV5_b532_sf(Mnodim)       # scale factor to get units
+#         u_bb2flsV5_b660_sf(Mnodim)       # scale factor to get units
+#         u_bb2flsV5_cdom_sf(ppb/nodim)    # scale factor to get units
+#         u_bb2flsV5_is_calibrated(bool) 1 # set to 1 after entering 
+#                                          # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 3 in autoexec.mi
+#
+#proglet = bb2flsV5
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_bb2flsV5_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# wet labs bb2flslk  custom 3-param  scattering meter/fluorometer, baud rate 19200 
+#                    6th configuration
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_bb2flsV6_b532_cwo(nodim)       # clean water offset, nodim == counts
+#         u_bb2flsV6_b880_cwo(nodim)       # clean water offset, nodim == counts
+#         u_bb2flsV6_cdom_cwo(nodim)        # clean water offset, nodim == counts
+#         u_bb2flsV6_b532_sf(Mnodim)       # scale factor to get units
+#         u_bb2flsV6_b880_sf(Mnodim)       # scale factor to get units
+#         u_bb2flsV6_cdom_sf(ppb/nodim)    # scale factor to get units
+#         u_bb2flsV6_is_calibrated(bool) 1 # set to 1 after entering 
+#                                          # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 3 in autoexec.mi
+#
+#proglet = bb2flsV6
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_bb2flsV6_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# wet labs bb2flslk  custom 3-param  scattering meter/fluorometer, baud rate 19200 
+#                    7th configuration
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_bb2flsV7_b532_cwo(nodim)       # clean water offset, nodim == counts
+#         u_bb2flsV7_b650_cwo(nodim)       # clean water offset, nodim == counts
+#         u_bb2flsV7_chl_cwo(nodim)        # clean water offset, nodim == counts
+#         u_bb2flsV7_b532_sf(Mnodim)       # scale factor to get units
+#         u_bb2flsV7_b650_sf(Mnodim)       # scale factor to get units
+#         u_bb2flsV7_chl_sf(ug/l/nodim)    # scale factor to get units
+#         u_bb2flsV7_is_calibrated(bool) 1 # set to 1 after entering 
+#                                          # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 3 in autoexec.mi
+#
+#proglet = bb2flsV7
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_bb2flsV7_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# wet labs bb3slo  custom 3-param backscatter meter, baud rate 19200 
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#	  u_bb3slo_b470_do(nodim)  # dark offset, nodim == counts
+#	  u_bb3slo_b532_do(nodim)  # dark offset, nodim == counts
+#	  u_bb3slo_b660_do(nodim)  # dark offset, nodim == counts
+#	  u_bb3slo_b470_sf(Mnodim) # scale factor (see masterdata about Mnodim!)
+#	  u_bb3slo_b532_sf(Mnodim) # scale factor 
+#	  u_bb3slo_b660_sf(Mnodim) # scale factor
+#         u_bb3slo_is_calibrated(bool) 1 # set to 1 after entering 
+#                                        # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 3 in autoexec.mi
+#
+#proglet = bb3slo
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_bb3slo_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# wet labs bb3slo  custom 3-param backscatter meter, 2nd configuration, baud rate 19200 
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#	  u_bb3sloV2_b532_do(nodim)  # dark offset, nodim == counts
+#	  u_bb3sloV2_b660_do(nodim)  # dark offset, nodim == counts
+#	  u_bb3sloV2_b880_do(nodim)  # dark offset, nodim == counts
+#	  u_bb3sloV2_b532_sf(Mnodim) # scale factor (see masterdata about Mnodim!)
+#	  u_bb3sloV2_b660_sf(Mnodim) # scale factor
+#	  u_bb3sloV2_b880_sf(Mnodim) # scale factor
+#         u_bb3sloV2_is_calibrated(bool) 1 # set to 1 after entering 
+#                                          # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 3 in autoexec.mi
+#
+#proglet = bb3sloV2
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_bb3sloV2_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# wet labs bb3slo  custom 3-param backscatter meter, 3nd configuration, baud rate 19200 
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#	  u_bb3sloV3_b532_do(nodim)  # dark offset, nodim == counts
+#	  u_bb3sloV3_b630_do(nodim)  # dark offset, nodim == counts
+#	  u_bb3sloV3_b880_do(nodim)  # dark offset, nodim == counts
+#	  u_bb3sloV3_b532_sf(Mnodim) # scale factor (see masterdata about Mnodim!)
+#	  u_bb3sloV3_b630_sf(Mnodim) # scale factor
+#	  u_bb3sloV3_b880_sf(Mnodim) # scale factor
+#         u_bb3sloV3_is_calibrated(bool) 1 # set to 1 after entering 
+#                                          # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 3 in autoexec.mi
+#
+#proglet = bb3sloV3
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_bb3sloV3_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# wet labs fl3slo  custom 3-param fluorescence meter, baud rate 19200
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_fl3slo_chlor_cwo(nodim)      # clean water offset, nodim == counts
+#         u_fl3slo_phyco_cwo(nodim)      # clean water offset, nodim == counts
+#         u_fl3slo_cdom_cwo(nodim)       # clean water offset, nodim == counts
+#         u_fl3slo_chlor_sf(ug/l/nodim)  # scale factor to get units
+#         u_fl3slo_phyco_sf(ppb/l/nodim) # scale factor to get units
+#         u_fl3slo_cdom_sf(ppb/l/nodim)  # scale factor to get units
+#         u_fl3slo_is_calibrated(bool) 1 # set to 1 after entering 
+#                                        # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 3 in autoexec.mi
+#
+#proglet = fl3slo
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_fl3slo_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# wet labs fl3slo  custom 3-param fluorescence meter, 2nd configuration, baud rate 19200
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_fl3sloV2_chlor_cwo(nodim)      # clean water dark offset, nodim == counts
+#         u_fl3sloV2_rhod_cwo(nodim)       # clean water dark offset, nodim == counts
+#         u_fl3sloV2_cdom_cwo(nodim)       # clean water dark offset, nodim == counts
+#         u_fl3sloV2_chlor_sf(ug/l/nodim)  # scale factor to get units
+#         u_fl3sloV2_rhod_sf(ppb/nodim)    # scale factor to get units
+#         u_fl3sloV2_cdom_sf(ppb/nodim)    # scale factor to get units
+#         u_fl3sloV2_is_calibrated(bool) 1 # set to 1 after entering 
+#                                          # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 3 in autoexec.mi
+#
+#proglet = fl3sloV2
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_fl3sloV2_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# wet labs flntu  fluorescence and turbidity meter, baud rate 19200
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_flntu_chlor_do(nodim)       # dark offset, nodim == counts
+#         u_flntu_turb_do(nodim)        # dark offset, nodim == counts
+#         u_flntu_chlor_sf(ug/l/nodim)  # scale factor to get units
+#         u_flntu_turb_sf(NTU/nodim)    # scale factor to get units
+#         u_flntu_is_calibrated(bool) 1 # set to 1 after entering 
+#                                       # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 2 in autoexec.mi
+#
+#proglet = flntu
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_flntu_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# whfctd       WHoi Fast CTD, baud rate 38400
+#proglet = whfctd
+#    uart       = j5         # connector  
+#    bit        = 0          # power, battery
+#    start_snsr = c_whfctd_on(sec)
+#
+#------------------------------------------------------------------------
+# Benthos Acoustic Modem, baud rate 9600
+#proglet = bam
+#    uart =  j5  # connector
+#    bit  =  0   # power, battery
+#    start_snsr =  c_bam_on(sec)
+#
+#------------------------------------------------------------------------
+# DREA hydrophone sampler, baud rate 9600
+#proglet = hydrophone
+#    start_snsr = c_hydrophone_on(sec)
+#
+# These aren't implemented yet
+#    bit = 5  # HIB_POWER_PIN, hydrophone interface power
+#
+#    qspi like interface to hydrophone interface board
+#    bit = 6  # HIB_DATA_PIN 
+#    bit = 7  # HIB_SHIFT_CLOCK_PIN 
+#    bit = 8  # HIB_LOAD_CLOCK_PIN 
+#
+#    qspi like interface to auxilliary hydrophone board shift register
+#    bit = 9  # AHB_DATA_PIN
+#    bit = 10 # AHB_SHIFT_CLOCK_PIN
+#    bit = 12 # AHB_LOAD_CLOCK_PIN
+#
+#------------------------------------------------------------------------
+# MDA Viper Processor, command baud rate 9600, data baud rate 57600
+#proglet = viper
+#    start_snsr = c_viper_on(sec)
+#    uart =  j5  # connector
+#    bit  =  0   # power, battery
+#
+#------------------------------------------------------------------------
+# Mote OPD, baud rate 19200
+#
+#proglet = MoteOPD
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_moteopd_on(sec)
+#
+#------------------------------------------------------------------------
+# Aanderaa Oxygen Optode 3835, baud rate 9600 
+#proglet = oxy3835
+#    uart       = j3         # connector
+#    bit        = 2          # power, 8.8v
+#    start_snsr = c_oxy3835_on(sec)
+#
+#------------------------------------------------------------------------
+# Aanderaa Oxygen Optode 3835, baud rate 9600 
+#proglet = oxy3835_wphase
+#    uart       = j3         # connector
+#    bit        = 2          # power, 8.8v
+#    start_snsr = c_oxy3835_wphase_on(sec)
+#------------------------------------------------------------------------
+# Satlantic ocr504R, baud rate 57600
+# NOTE: This proglet requires the following sensor specific constants from
+#       Satlantic for deriving radiance (put in autoexec.mi):
+#	u_ocr504R_dark_counts_c1(nodim) 	(see masterdata about Tnodim!)
+#	u_ocr504R_cal_coeff_c1(Tnodim) 
+#	u_ocr504R_immersion_coeff_c1(nodim)
+#	u_ocr504R_dark_counts_c2(nodim) 
+#	u_ocr504R_cal_coeff_c2(Tnodim)  
+#	u_ocr504R_immersion_coeff_c2(nodim)
+#	u_ocr504R_dark_counts_c3(nodim) 
+#	u_ocr504R_cal_coeff_c3(Tnodim)  
+#	u_ocr504R_immersion_coeff_c3(nodim)
+#	u_ocr504R_dark_counts_c4(nodim)
+#	u_ocr504R_cal_coeff_c4(Tnodim)
+#	u_ocr504R_immersion_coeff_c4(nodim)
+#       u_ocr504R_Vin_a0(nodim)
+#       u_ocr504R_Vin_a1(nodim)
+#       u_ocr504R_itemp_a0(nodim)
+#       u_ocr504R_itemp_a1(nodim)
+#       u_ocr504R_is_calibrated(bool) 1 # set to 1 after entering 
+#                                       # calibration constants
+#
+#proglet = ocr504R
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_ocr504R_on(sec)
+#
+#------------------------------------------------------------------------
+# Satlantic ocr504I, baud rate 57600
+# NOTE: This proglet requires the following sensor specific constants from
+#       Satlantic for deriving irradiance (put in autoexec.mi):
+#	u_ocr504I_dark_counts_c1(nodim) 	(see masterdata about Tnodim!)
+#	u_ocr504I_cal_coeff_c1(Tnodim) 
+#	u_ocr504I_immersion_coeff_c1(nodim)
+#	u_ocr504I_dark_counts_c2(nodim) 
+#	u_ocr504I_cal_coeff_c2(Tnodim)  
+#	u_ocr504I_immersion_coeff_c2(nodim)
+#	u_ocr504I_dark_counts_c3(nodim) 
+#	u_ocr504I_cal_coeff_c3(Tnodim)  
+#	u_ocr504I_immersion_coeff_c3(nodim)
+#	u_ocr504I_dark_counts_c4(nodim)
+#	u_ocr504I_cal_coeff_c4(Tnodim)  
+#	u_ocr504I_immersion_coeff_c4(nodim)
+#       u_ocr504I_Vin_a0(nodim)
+#       u_ocr504I_Vin_a1(nodim)
+#       u_ocr504I_itemp_a0(nodim)
+#       u_ocr504I_itemp_a1(nodim)
+#       u_ocr504I_is_calibrated(bool) 1 # set to 1 after entering 
+#                                       # calibration constants
+#
+#proglet = ocr504I
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_ocr504I_on(sec)
+#
+#------------------------------------------------------------------------
+# Satlantic ocr507R, baud rate 57600
+# NOTE: This proglet requires the following sensor specific constants from
+#       Satlantic for deriving radiance (put in autoexec.mi):
+#	u_ocr507R_dark_counts_c1(nodim) 	(see masterdata about Tnodim!)
+#	u_ocr507R_cal_coeff_c1(Tnodim) 
+#	u_ocr507R_immersion_coeff_c1(nodim)
+#	u_ocr507R_dark_counts_c2(nodim) 
+#	u_ocr507R_cal_coeff_c2(Tnodim)  
+#	u_ocr507R_immersion_coeff_c2(nodim)
+#	u_ocr507R_dark_counts_c3(nodim) 
+#	u_ocr507R_cal_coeff_c3(Tnodim)  
+#	u_ocr507R_immersion_coeff_c3(nodim)
+#	u_ocr507R_dark_counts_c4(nodim)
+#	u_ocr507R_cal_coeff_c4(Tnodim)
+#	u_ocr507R_immersion_coeff_c4(nodim)
+#	u_ocr507R_dark_counts_c5(nodim)
+#	u_ocr507R_cal_coeff_c5(Tnodim)
+#	u_ocr507R_immersion_coeff_c5(nodim)
+#	u_ocr507R_dark_counts_c6(nodim)
+#	u_ocr507R_cal_coeff_c6(Tnodim)
+#	u_ocr507R_immersion_coeff_c6(nodim)
+#	u_ocr507R_dark_counts_c7(nodim)
+#	u_ocr507R_cal_coeff_c7(Tnodim)
+#	u_ocr507R_immersion_coeff_c7(nodim)
+#       u_ocr507R_Vin_a0(nodim)
+#       u_ocr507R_Vin_a1(nodim)
+#       u_ocr507R_Va_a0(nodim)
+#       u_ocr507R_Va_a1(nodim)
+#       u_ocr507R_itemp_a0(nodim)
+#       u_ocr507R_itemp_a1(nodim)
+#       u_ocr507R_is_calibrated(bool) 1 # set to 1 after entering 
+#                                       # calibration constants
+#
+#proglet = ocr507R
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_ocr507R_on(sec)
+#
+#------------------------------------------------------------------------
+# Satlantic ocr507I, baud rate 57600
+# NOTE: This proglet requires the following sensor specific constants from
+#       Satlantic for deriving irradiance (put in autoexec.mi):
+#	u_ocr507I_dark_counts_c1(nodim) 	(see masterdata about Tnodim!)
+#	u_ocr507I_cal_coeff_c1(Tnodim) 
+#	u_ocr507I_immersion_coeff_c1(nodim)
+#	u_ocr507I_dark_counts_c2(nodim) 
+#	u_ocr507I_cal_coeff_c2(Tnodim)  
+#	u_ocr507I_immersion_coeff_c2(nodim)
+#	u_ocr507I_dark_counts_c3(nodim) 
+#	u_ocr507I_cal_coeff_c3(Tnodim)  
+#	u_ocr507I_immersion_coeff_c3(nodim)
+#	u_ocr507I_dark_counts_c4(nodim)
+#	u_ocr507I_cal_coeff_c4(Tnodim)  
+#	u_ocr507I_immersion_coeff_c4(nodim)
+#	u_ocr507I_dark_counts_c5(nodim)
+#	u_ocr507I_cal_coeff_c5(Tnodim)  
+#	u_ocr507I_immersion_coeff_c5(nodim)
+#	u_ocr507I_dark_counts_c6(nodim)
+#	u_ocr507I_cal_coeff_c6(Tnodim)  
+#	u_ocr507I_immersion_coeff_c6(nodim)
+#	u_ocr507I_dark_counts_c7(nodim)
+#	u_ocr507I_cal_coeff_c7(Tnodim)  
+#	u_ocr507I_immersion_coeff_c7(nodim)
+#       u_ocr507I_Vin_a0(nodim)
+#       u_ocr507I_Vin_a1(nodim)
+#       u_ocr507I_Va_a0(nodim)
+#       u_ocr507I_Va_a1(nodim)
+#       u_ocr507I_itemp_a0(nodim)
+#       u_ocr507I_itemp_a1(nodim)
+#       u_ocr507I_is_calibrated(bool) 1 # set to 1 after entering 
+#                                       # calibration constants
+#
+#proglet = ocr507I
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_ocr507I_on(sec)
+#
+#------------------------------------------------------------------------
+# Benthos Acoustic Data Delivery system, baud rate 9600
+#proglet = badd
+#    uart =  j5  # connector
+#    bit  =  0   # power, battery
+#    start_snsr =  c_badd_on(sec)
+#
+#------------------------------------------------------------------------
+# Wet Labs AUV-B Flourometer, baud rate 19200
+#proglet = auvb
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_auvb_on(sec)
+#    simulator = auvb_sim
+#------------------------------------------------------------------------
+# OASIS Towed Array Receiver/DSP, baud rate 9600
+#proglet = tarr
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    bit        = 5          # power control for DSP
+#    start_snsr = c_tarr_on(sec)
+#------------------------------------------------------------------------
+# ASL GLBPS SONAR Device, baud rate 115200
+#proglet = glbps
+#    uart       = j5         # connector
+#    start_snsr = c_glbps_on(sec)
+#
+#------------------------------------------------------------------------
+# SSCSD SPAWAR Acoustic Array, baud rate 9600
+#proglet = sscsd
+#    uart       = j5    # connector
+#    bit        = 0     # power, battery
+#                       # rebooted to turn on again
+#    start_snsr = c_sscsd_on(sec)
+#------------------------------------------------------------------------
+# Satlantic FIRe, baud rate 9600
+#proglet = FIRe
+#    uart       = j5    # connector 
+#    bit        = 0     # power, battery
+#    start_snsr = c_FIRe_on(sec)
+#------------------------------------------------------------------------
+# generic data logger
+# This proglet supports several logger configurations
+#    connected to J12, with\without control signal:
+#            no UART, power bit High Power (4), control bit optional
+#    connected to J13, with\without control signal:
+#            no UART, power bit (0-2), control bit optional
+#    connected to J3-J6, with\without control signal:
+#            requires UART, power bit (0-2), control bit optional
+#
+#proglet = logger
+#    uart       = j5    # connector
+#    bit        = 0     # power, battery
+#    bit        = 5     # logging control
+#    start_snsr = c_logger_on(sec)
+#------------------------------------------------------------------------
+# Wetlabs BAM, baud rate 19200
+#proglet = bbam
+#    uart       = j5    # connector 
+#    bit        = 0     # power, battery
+#    start_snsr = c_bbam_on(sec)
+#    simulator  = bbam_sim
+#------------------------------------------------------------------------
+# W.H.O.I. Acoustic Micro-Modem, baud rate 19200
+#proglet = uModem
+#    uart       = j5    # connector
+#    bit        = 0     # power, battery
+#    start_snsr = c_uModem_on(sec)
+#------------------------------------------------------------------------
+# JFE ALEC CO. RINKO-II oxygen temp sensor, baud rate 38400
+# NOTE: This proglet supports the following sensor (put in autoexec.mi):
+#         u_rinkoII_output_engineering_data(bool) 0 # set to 0, device outputs Physical data
+#                                                   # set to 1, device outputs Engineer data 
+#proglet = rinkoII
+#    uart       = j5    # connector 
+#    bit        = 0     # power, battery
+#    start_snsr = c_rinkoII_on(sec)
+#------------------------------------------------------------------------
+# TRDI ExplorerDVL, baud rate 9600
+#
+# NOTE: This proglet requires -noclklower to be in (SCI)C:\config\appcmd.dat
+#
+#proglet = dvl
+#    uart       = j5    # connector
+#    bit        = 0     # power, battery
+#    start_snsr = c_dvl_on(sec)
+#------------------------------------------------------------------------
+# Wet Labs flbbrh fluorometer, scattering meter, and rhodamine sensor, baud rate 19200
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_flbbrh_chlor_cwo(nodim)      # clean water dark offset, nodim == counts
+#         u_flbbrh_rhod_cwo(nodim)       # clean water dark offset, nodim == counts
+#         u_flbbrh_bb_cwo(nodim)         # clean water dark offset, nodim == counts
+#         u_flbbrh_chlor_sf(ug/l/nodim)  # scale factor to get units
+#         u_flbbrh_rhod_sf(ppb/nodim)    # scale factor to get units
+#         u_flbbrh_bb_sf(Mnodim)         # scale factor to get units
+#         u_flbbrh_is_calibrated(bool) 1 # set to 1 after entering 
+#                                        # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 3 in autoexec.mi
+#
+#proglet = flbbrh
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_flbbrh_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# Wet Labs flur uranine sensor, baud rate 19200
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_flur_cwo(nodim)              # clean water dark offset, nodim == counts
+#         u_flur_sf(ppb/nodim)           # scale factor to get units
+#         u_flbbrh_is_calibrated(bool) 1 # set to 1 after entering 
+#                                        # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 1 in autoexec.mi
+#
+#proglet = flur
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_flur_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# Wet Labs flbbcd fluorometer, scattering meter, and cdom sensor, baud rate 19200
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_flbbcd_chlor_cwo(nodim)      # clean water dark offset, nodim == counts
+#         u_flbbcd_bb_cwo(nodim)         # clean water dark offset, nodim == counts
+#         u_flbbcd_cdom_cwo(nodim)       # clean water dark offset, nodim == counts
+#         u_flbbcd_chlor_sf(ug/l/nodim)  # scale factor to get units
+#         u_flbbcd_bb_sf(Mnodim)         # scale factor to get units
+#         u_flbbcd_cdom_sf(ppb/nodim)    # scale factor to get units
+#         u_flbbcd_is_calibrated(bool) 1 # set to 1 after entering 
+#                                        # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 3 in autoexec.mi
+#
+#proglet = flbbcd
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_flbbcd_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# W.H.O.I DMON, baud rate 9600
+#proglet = dmon
+#    uart       = j5    # connector 
+#    bit        = 0     # power, battery
+#    start_snsr = c_dmon_on(sec)
+#------------------------------------------------------------------------
+# Turner Designs C3 Submersible Fluorometer, baud rate 9600
+#proglet = c3sfl
+#    uart       = j5    # connector
+#    bit        = 0     # power, battery
+#    start_snsr = c_c3sfl_on(sec)
+#------------------------------------------------------------------------
+# Satlantic SUNA, baud rate 38400
+#proglet = suna
+#    uart       = j5    # connector 
+#    bit        = 0     # power, battery
+#    start_snsr = c_suna_on(sec)
+#------------------------------------------------------------------------
+# Satlantic PAR Sensor, baud rate 19200
+# NOTE: This proglet requires the following sensor specific constants from
+#       Calibraion coefficients for scale PAR output (put in autoexec.mi):
+#         u_satpar_immersion_coeff(nodim)
+#         u_satpar_dark_offset(nodim)   
+#         u_satpar_slope(Mnodim)
+#         u_satpar_is_calibrated(bool) 1 # set to 1 after entering 
+#                                        # calibration constants
+#
+#proglet = satpar
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_satpar_on(sec)
+#------------------------------------------------------------------------
+# Wet Labs vsf Volume Scattering Function meter, baud rate 19200
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_vsf_100_dc(nodim)         # clean water dark offset, nodim == counts
+#         u_vsf_125_dc(nodim)         # clean water dark offset, nodim == counts
+#         u_vsf_150_dc(nodim)         # clean water dark offset, nodim == counts
+#         u_vsf_100_sf(Mnodim)        # scale factor to get units
+#         u_vsf_125_sf(Mnodim)        # scale factor to get units
+#         u_vsf_150_sf(Mnodim)        # scale factor to get units
+#         u_vsf_is_calibrated(bool) 1 # set to 1 after entering 
+#                                     # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 3 in autoexec.mi
+#
+#proglet = vsf
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_vsf_on(sec)
+#
+#------------------------------------------------------------------------
+# Aanderaa Oxygen Optode 4330F or 4831, baud rate 9600
+# NOTE: This proglet requires the following input sensor (put in autoexec.mi):
+#       u_oxy4_slow_surface_mode(bool) 1 (default for 4330F), 0 for 4831 model
+#
+#proglet = oxy4
+#    uart       = j3         # connector 
+#    bit        = 2          # power, 8.8v
+#    start_snsr = c_oxy4_on(sec)
+#------------------------------------------------------------------------
+# Biospherical Instruments PAR Sensor, baud rate 9600
+# NOTE: This proglet requires the following sensor specific constants from
+#       Calibraion coefficients to scale PAR output (put in autoexec.mi):
+#         u_bsipar_dark_offset(volts)   
+#         u_bsipar_scale_factor(Mnodim)
+#         u_bsipar_is_calibrated(bool) 1 # set to 1 after entering 
+#                                        # calibration constants
+#
+#proglet = bsipar
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_bsipar_on(sec)
+#------------------------------------------------------------------------
+# Wet Labs flbb fluorescence and scattering meter, baud rate 19200
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_flbb_chlor_do(nodim)       # dark offset, nodim == counts
+#         u_flbb_bb_do(nodim)          # dark offset, nodim == counts
+#         u_flbb_chlor_sf(ug/l/nodim)  # scale factor to get units
+#         u_flbb_bb_sf(Mnodim)         # scale factor to get units
+#         u_flbb_is_calibrated(bool) 1 # set to 1 after entering 
+#                                      # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 2 in autoexec.mi
+#
+#proglet = flbb
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_flbb_on(sec)
+#    simulator = wetlabs_sim
+#------------------------------------------------------------------------
+# Vemco VR2C Submersible, Dual Single-Channel Acoustic Recievers, baud rate 9600
+# NOTE: This proglet requires the following sensor specific constants
+#       for deriving device serial numbers and associated UARTS (put in autoexec.mi):
+#         sci_vr2c_serial_num_0(nodim)   # serial number of device 0
+#         sci_vr2c_serial_num_1(nodim)   # serial number of device 1
+#       The serial number ID's need to correspond with the bits defined below,
+#       otherwise communications with vr2c devices will fail.
+#
+#proglet = vr2c
+#    uart       = j5         # connector for device 0
+#    bit        = 0          # power control for device 0
+#    uart       = j6         # connector for device 1, if installed
+#    bit        = 0          # power control for device 1, if installed
+#    start_snsr = c_vr2c_on(sec)
+#
+#------------------------------------------------------------------------
+# Benthos Acoustic Data Delivery system, baud rate 9600
+#proglet = badd_mmp
+#    uart =  j5  # connector
+#    bit  =  0   # power, battery
+#    start_snsr =  c_badd_on(sec)
+#
+#------------------------------------------------------------------------
+# Imagenex Technology Corp. Modem 853 Echo Sounder with Data Logger, baud rate 9600
+#proglet = echosndr853
+#    uart =  j5  # connector
+#    bit  =  0   # power, battery
+#    start_snsr =  c_echosndr853_on(sec)
+#
+#------------------------------------------------------------------------
+# Wet Labs flrh Rhodamine Fluorometer sensor, baud rate 19200
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_flrh_cwo(nodim)              # clean water dark offset, nodim == counts
+#         u_flrh_sf(ppb/nodim)           # scale factor to get units
+#         u_flrh_is_calibrated(bool)   1 # set to 1 after entering 
+#                                        # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 1 in autoexec.mi
+#
+#proglet = flrh
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_flrh_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# wet labs bb2flslk  custom 3-param  scattering meter/fluorometer, baud rate 19200 
+#                    8th configuration
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_bb2flsV8_b470_cwo(nodim)       # clean water offset, nodim == counts
+#         u_bb2flsV8_b700_cwo(nodim)       # clean water offset, nodim == counts
+#         u_bb2flsV8_chl_cwo(nodim)        # clean water offset, nodim == counts
+#         u_bb2flsV8_b470_sf(Mnodim)       # scale factor to get units
+#         u_bb2flsV8_b700_sf(Mnodim)       # scale factor to get units
+#         u_bb2flsV8_chl_sf(ug/l/nodim)    # scale factor to get units
+#         u_bb2flsV8_is_calibrated(bool) 1 # set to 1 after entering 
+#                                          # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 3 in autoexec.mi
+#
+#proglet = bb2flsV8
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_bb2flsV8_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# Chelsea Technologies UviLuxPAH fluorometer (Polycyclic Aromatic Hydrocarbon), baud rate 9600
+# NOTE: This proglet requires the following (put in autoexec.mi):
+#         u_uviluxPAH_is_calibrated(bool) 1 # set to 1
+#
+#proglet = uviluxPAH
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_uviluxPAH_on(sec)
+#
+#------------------------------------------------------------------------
+# Nortek AD2CP (Acoustic Doppler Current Profiler), baud rate 19200
+#
+#proglet = ad2cp
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    bit        = 5          # Bottom Track Control Signal
+#    start_snsr = c_ad2cp_on(sec)
+#
+#------------------------------------------------------------------------
+# Pro-Oceanus Mini-Pro CO2 sensor, baud rate 9600
+#
+#proglet = miniProCO2
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_miniProCO2_on(sec)
+#
+#------------------------------------------------------------------------
+# Aanderaa pCO2 sensor, baud rate 9600
+#
+#proglet = pCO2
+#    uart       = j5         # connector
+#    bit        = 2          # power, 8.8v
+#    start_snsr = c_pCO2_on(sec)
+#
+#------------------------------------------------------------------------
+# Wet Labs Sea Oil-in-Water Locator, baud rate 19200
+#
+#proglet = seaOWL
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_seaOWL_on(sec)
+#
+#------------------------------------------------------------------------
+# ASL Acoustic Zooplankton Fish Profiler (AZFP), echosounder, baud rate 9600
+#
+#proglet = azfp
+#    uart       = j5         # connector
+#    bit        = 5          # Pause\Go control line
+#    start_snsr = c_azfp_on(sec)
+#
+#------------------------------------------------------------------------
+# Wet Labs Underwater Bioluminescence Assessment Tool (UBAT), baud rate 19200
+#
+#proglet = ubat
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_ubat_on(sec)
+#
+#------------------------------------------------------------------------
+# Sequoia Laser In-Situ Scattering and Transmissometry (LISST), baud rate 9600
+#
+#proglet = lisst
+#    uart       = j5         # connector
+#    bit        = 0          # power control for sensor
+#    start_snsr = c_lisst_on(sec)
+#
+#------------------------------------------------------------------------
+# Franatech Laser Methane Sensor(LMS), baud rate 9600
+#
+#proglet = lms
+#    uart       = j5         # connector
+#    bit        = 0          # power control for sensor
+#    start_snsr = c_lms_on(sec)
+#
+#------------------------------------------------------------------------
+# SeaView Systems Inertial Wave Sensor SVS-603 (SVS603), baud rate 9600
+#
+#proglet = svs603
+#    uart       = j5         # connector
+#    bit        = 0          # power control for sensor
+#    start_snsr = c_svs603_on(sec)
+#
+#------------------------------------------------------------------------
+# Rockland Scientific MicroRider MR-1000 (MICRORIDER), baud rate 9600
+# Rockland Scientific MicroRider DL-3, baud rate 115200
+#
+#proglet = microRider
+#    uart       = j5         # connector
+#    bit        = 0          # power control for sensor
+#    start_snsr = c_microRider_on(sec)
+#
+#------------------------------------------------------------------------
+# wet labs bb2flslc  custom 3-param  scattering meter/fluorometer, baud rate 19200 
+#                    9th configuration
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_bb2flsV9_b532_cwo(nodim)       # clean water offset, nodim == counts
+#         u_bb2flsV9_b700_cwo(nodim)       # clean water offset, nodim == counts
+#         u_bb2flsV9_chl_cwo(nodim)        # clean water offset, nodim == counts
+#         u_bb2flsV9_b532_sf(Mnodim)       # scale factor to get units
+#         u_bb2flsV9_b700_sf(Mnodim)       # scale factor to get units
+#         u_bb2flsV9_chl_sf(ug/l/nodim)    # scale factor to get units
+#         u_bb2flsV9_is_calibrated(bool) 1 # set to 1 after entering 
+#                                          # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 3 in autoexec.mi
+#
+#proglet = bb2flsV9
+#    uart       = j5         # connector
+#    bit        = 0          # power, battery
+#    start_snsr = c_bb2flsV9_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# Sea-bird SBE41N-pH sensor, baud rate 9600
+# NOTE: This proglet must be used in conjunction with a CTD; the CTD data
+#       is required to post-process the pH output.  This sensor is a CMOS
+#       device and must be connected to the CMOS port (J14).  When using 
+#       J14, J0 cannot be used by another device.
+#proglet = sbe41n_ph
+#    uart       = j14        # CMOS port, connector J14 cannot be used in conjunction with J0
+#    bit        = 3          # power, aux power
+#    start_snsr = c_sbe41n_ph_on(sec)
+#
+#------------------------------------------------------------------------
+# Wet Labs fl2UrRh Uranine and Rhodamine sensor, baud rate 19200
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_fl2UrRh_uran_do(nodim)            # dark offset, nodim == counts
+#         u_fl2UrRh_rhod_do(nodim)            # dark offset, nodim == counts
+#         u_fl2UrRh_uran_sf(ppb/count/nodim)  # scale factor to get units
+#         u_fl2UrRh_rhod_sf(ppb/count/nodim)  # scale factor to get units
+#         u_fl2UrRh_is_calibrated(bool) 1     # set to 1 after entering 
+#                                             # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 2 in autoexec.mi
+#
+#proglet = fl2UrRh
+#    uart       = j5         # connector
+#    bit        = 0          # power control for sensor
+#    start_snsr = c_fl2UrRh_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# Wet Labs flbbbbslc  fluorometer(ug/l), scattering, scattering sensor, baud rate 19200 
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_flbbbbV1_fl_cwo(nodim)         # clean water offset, nodim == counts
+#         u_flbbbbV1_bb1_cwo(nodim)        # clean water offset, nodim == counts
+#         u_flbbbbV1_bb2_cwo(nodim)        # clean water offset, nodim == counts
+#         u_flbbbbV1_fl_sf(ug/l/nodim)     # scale factor to get units
+#         u_flbbbbV1_bb1_sf(Mnodim)        # scale factor to get units
+#         u_flbbbbV1_bb2_sf(Mnodim)        # scale factor to get units
+#         u_flbbbbV1_is_calibrated(bool) 1 # set to 1 after entering 
+#                                          # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 3 in autoexec.mi
+#
+#proglet = flbbbbV1
+#    uart       = j5         # connector
+#    bit        = 0          # power control for sensor
+#    start_snsr = c_flbbbbV1_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# Wet Labs flbbbbslc  fluorometer(ppb), scattering, scattering sensor, baud rate 19200 
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_flbbbbV2_fl_cwo(nodim)         # clean water offset, nodim == counts
+#         u_flbbbbV2_bb1_cwo(nodim)        # clean water offset, nodim == counts
+#         u_flbbbbV2_bb2_cwo(nodim)        # clean water offset, nodim == counts
+#         u_flbbbbV2_fl_sf(ppb/nodim)      # scale factor to get units
+#         u_flbbbbV2_bb1_sf(Mnodim)        # scale factor to get units
+#         u_flbbbbV2_bb2_sf(Mnodim)        # scale factor to get units
+#         u_flbbbbV2_is_calibrated(bool) 1 # set to 1 after entering 
+#                                          # calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 3 in autoexec.mi
+#
+#proglet = flbbbbV2
+#    uart       = j5         # connector
+#    bit        = 0          # power control for sensor
+#    start_snsr = c_flbbbbV2_on(sec)
+#    simulator = wetlabs_sim
+#------------------------------------------------------------------------
+# Jasco Observer Hydrophone sensor, baud rate 38400
+#
+#proglet = obsvr
+#    uart       = j5         # connector
+#    bit        = 0          # power control for sensor
+#    start_snsr = c_obsvr_on(sec)
+#
+#------------------------------------------------------------------------
+# Wet Labs fl2PeCdom Phycoerythrin and CDOM sensor, baud rate 19200
+# NOTE: This proglet requires the following sensor specific constants from
+#       Wet Labs for deriving engineering units (put in autoexec.mi):
+#         u_fl2PeCdom_pe_do(nodim)         		# dark offset, nodim == counts
+#         u_fl2PeCdom_cdom_do(nodim)            # dark offset, nodim == counts
+#         u_fl2PeCdom_pe_sf(ppb/count/nodim)  	# scale factor to get units
+#         u_fl2PeCdom_cdom_sf(ppb/count/nodim)  # scale factor to get units
+#         u_fl2PeCdom_is_calibrated(bool) 1     # set to 1 after entering 
+#                                             	# calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to 2 in autoexec.mi
+#
+#proglet = fl2PeCdom
+#    uart       = j5        # connector
+#    bit        = 0         # power control for sensor
+#    start_snsr = c_fl2PeCdom_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# Wet Labs generic proglet A, 1, 2, or 3 channel sensor, baud rate 19200
+# NOTE: This proglet requires the following sensor specific constants (indirectly set using wetlabsA.ini):
+#       Channel specific sensors are required based on the number of channels
+#         sci_wetlabsA_serial_num(nodim)   999 # device serial number, digits only
+#         sci_wetlabsA_num_channels(nodim) 0   # device number of channels, 1, 2, or 3
+#         sci_wetlabsA_ch1_dc(nodim)       0   # dark counts for ch1
+#         sci_wetlabsA_ch2_dc(nodim)       0   # dark counts for ch2
+#         sci_wetlabsA_ch3_dc(nodim)       0   # dark counts for ch3
+#         sci_wetlabsA_ch1_sf(nodim)       0   # scale factor for ch1
+#         sci_wetlabsA_ch2_sf(nodim)       0   # scale factor for ch2
+#         sci_wetlabsA_ch3_sf(nodim)       0   # scale factor for ch3
+#
+#         (autoexec.mi file)
+#         u_wetlabsA_is_calibrated(bool) 1   # set to 1 after entering calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to the number of channels in wetlabsA.ini
+#
+#proglet = wetlabsA
+#    uart       = j4        # connector
+#    bit        = 0         # power control for sensor
+#    start_snsr = c_wetlabsA_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# Wet Labs generic proglet B, 1, 2, or 3 channel sensor, baud rate 19200
+# NOTE: This proglet requires the following sensor specific constants (indirectly set using wetlabsB.ini):
+#       Channel specific sensors are required based on the number of channels
+#         sci_wetlabsB_serial_num(nodim)   999 # device serial number, digits only
+#         sci_wetlabsB_num_channels(nodim) 0   # device number of channels, 1, 2, or 3
+#         sci_wetlabsB_ch1_dc(nodim)       0   # dark counts for ch1
+#         sci_wetlabsB_ch2_dc(nodim)       0   # dark counts for ch2
+#         sci_wetlabsB_ch3_dc(nodim)       0   # dark counts for ch3
+#         sci_wetlabsB_ch1_sf(nodim)       0   # scale factor for ch1
+#         sci_wetlabsB_ch2_sf(nodim)       0   # scale factor for ch2
+#         sci_wetlabsB_ch3_sf(nodim)       0   # scale factor for ch3
+#
+#         (autoexec.mi file)
+#         u_wetlabsB_is_calibrated(bool) 1   # set to 1 after entering calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to the number of channels in wetlabsB.ini
+#
+#proglet = wetlabsB
+#    uart       = j5        # connector
+#    bit        = 0         # power control for sensor
+#    start_snsr = c_wetlabsB_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# Wet Labs generic proglet C, 1, 2, or 3 channel sensor, baud rate 19200
+# NOTE: This proglet requires the following sensor specific constants (indirectly set using wetlabsC.ini):
+#       Channel specific sensors are required based on the number of channels
+#         sci_wetlabsC_serial_num(nodim)   999 # device serial number, digits only
+#         sci_wetlabsC_num_channels(nodim) 0   # device number of channels, 1, 2, or 3
+#         sci_wetlabsC_ch1_dc(nodim)       0   # dark counts for ch1
+#         sci_wetlabsC_ch2_dc(nodim)       0   # dark counts for ch2
+#         sci_wetlabsC_ch3_dc(nodim)       0   # dark counts for ch3
+#         sci_wetlabsC_ch1_sf(nodim)       0   # scale factor for ch1
+#         sci_wetlabsC_ch2_sf(nodim)       0   # scale factor for ch2
+#         sci_wetlabsC_ch3_sf(nodim)       0   # scale factor for ch3
+#
+#         (autoexec.mi file)
+#         u_wetlabsC_is_calibrated(bool) 1   # set to 1 after entering calibration constants
+#
+# For simulator, set u_wetlabs_sim_num_eng_units(nodim) to the number of channels in wetlabsC.ini
+#
+#proglet = wetlabsC
+#    uart       = j6        # connector
+#    bit        = 0         # power control for sensor
+#    start_snsr = c_wetlabsC_on(sec)
+#    simulator = wetlabs_sim
+#
+#------------------------------------------------------------------------
+# RBR logger CTD sensor, baud rate 9600
+#
+#proglet = rbrctd
+#    uart       = j5         # connector
+#    bit        = 0          # power control for sensor
+#    start_snsr = c_profile_on(sec)
+#
+#------------------------------------------------------------------------
+# Odroid Echo Sounder sensor, baud rate 115200
+# Note: The Odroid processor is a 5V device (15V regulated -> 5V regulator -> Odroid)
+#       The second uart is only used to provide power to the EchoSounder, no communication
+#
+#proglet = echodroid
+#    uart       = j4         # connector for Odroid
+#    bit        = 1          # power control for Odroid
+#    uart       = j5         # connector for EchoSounder  
+#    bit        = 1          # power control for EchoSounder
+#    start_snsr = c_echodroid_on(sec)
+#
+#------------------------------------------------------------------------
+# Sequoia LISST-Tau Beam Attenuation Meter, baud rate 19200
+#
+#proglet = tau
+#    uart       = j4         # connector
+#    bit        = 0          # power control for sensor
+#    start_snsr = c_tau_on(sec)
+#
+#------------------------------------------------------------------------
+# RBRcoda T.ODO, Temperature & Dissolved Oxygen sensor, baud rate 9600
+#
+#proglet = rbrodo
+#    uart       = j5         # connector
+#    bit        = 0          # power control for sensor
+#    start_snsr = c_rbrodo_on(sec)
+#
+#------------------------------------------------------------------------
+# Williamson Camera, baud rate 9600, 8.8V
+#
+#proglet = solocam
+#    uart       = j5         # connector
+#    bit        = 2          # power control for sensor, 8.8V
+#    start_snsr = c_solocam_on(sec)
+#
+#------------------------------------------------------------------------
+# JASCO AMAR, Autonomous Multichannel Acoustic Recorder sensor, baud rate 9600
+#
+#proglet = amar
+#    uart       = j5         # connector
+#    bit        = 0          # power control for sensor
+#    start_snsr = c_amar_on(sec)
+#
+#------------------------------------------------------------------------
+# <PROTO> add new proglets here
+# Available "bits":
+#
+# Bit#    Name           Description
+# ----------------------------------------------------------------------------
+#  0      VBATT          VBATT power
+#  1      15V_ENABLE     15V regulated power
+#  2      8V8_ENABLE     8.8V regulated power
+#  3      AUX_PWR_ON     Aux power control bit (J13)
+#  4      HI_PWR_ON      High power (Vbatt) control bit (J12)
+#  5      GPIO_0         J22-2, 3.3V Logic
+#  6      GPIO_1         J22-3, 3.3V Logic
+#  7      GPIO_2         J22-4, 3.3V Logic
+#  8      GPIO_3         J22-5, 3.3V Logic
+#  9      GPIO_4         J22-6, 3.3V Logic
+# 10      GPIO_5         J22-7, 3.3V Logic
+# 11      GPIO_6         not used
+# 12      GPIO_7         J1-17, 3.3V Logic
+# 13      GPIO_8         J1-18, 3.3V Logic
+# 14      GPIO_9         J1-19, 3.3V Logic
+# 15      CTD_MODE       Mode bit used with UART #14 for CTD (J14-5)
+# 16      CTD_PWR_CTRL   Control bit used with UART #14 for CTD (J14-4)

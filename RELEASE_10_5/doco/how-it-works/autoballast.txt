@@ -1,0 +1,276 @@
+/doco/how-it-works/autoballast.txt
+
+This document describes the Webb Research Electric Glider Autoballast capability.
+It is suggested that if you are interested in using this capability, you contact the author (lcooney@teledyne.com) to 
+discuss your mission plan. 
+
+2010-11-01 lcooney@teledyne.com Initial
+2010-11-15 lcooney@teledyne.com Revision
+2011-04-28 lcooney@teledyne.com Revision
+2011-09-15 lcooney@teledyne.com Revision.
+2012-12-03 lacooney@alum.mit.edu Revision: Added u_autoballast_end_on_converge
+2013-03-01 lacooney@alum.mit.edu Updated c_autoballast_state text
+
+
+
+## TABLE OF CONTENTS
+- ABSTRACT
+- GENERAL DESCRIPTION
+- HOW-TO USE IT (SHORT VERSION)
+- HOW-TO USE IT (LONG VERSION)
+- FAQ
+- AUTOBALLAST SENSOR RESET
+- SPEED CONTROL DESCRIPTION
+- LOCAL DEPTH RATE:  Autoballast has several methods of calculating the local depth rate used in speed control
+- SAMPLE .MLG OUTPUT:  Autoballast produces a number of messages that are recorded in the .mlg file
+- SAMPLE AUTOBALLAST INITIALIZATION SCRIPT
+
+## ABSTRACT
+The traditional glider ballast control method reads in an absolute amount of ballast to pump, and commands that amount.  In most cases, this absolute amount is the maximum operational limit of the pump. 
+
+Autoballast adjusts the gross balance for optimimum performance for a given buoyancy drive.  The operator may choose a total displacement.  This allows the glider to self-adjust for bouyancy variances due to the operation site, as well as take advantage of the increases in efficiency that may be achieved by using less ballast.  The Autoballast control provides a method of commanding a user-specified amount of ballast while maintaining a minimum vehicle speed.  The Autoballast algorithm converges upon the appropriate amount of ballast for the dive and climb portions s.t. the times to dive and climb are approximately equal.  Autoballast is designed for use on deep and shallow electric gliders.
+
+
+## GENERAL DESCRIPTION ##
+The Autoballast control is currently implemented for the "yo" behavior.  It is turned on by changing the yo behavior argument USE_BPUMP, from default = 2(SM_AMTPUMPED) to 0 (SM_SPEED).  
+
+The Autoballast control has two levels of control: Ballast Control and Speed Control.  
+- The Ballast Control converges on the appropriate amount of ballast to use for the dive component (sensor C_DIVE_BPUMP) and climb component (C_CLIMB_BPUMP) to achieve the desired ratio of dive to climb times C_TIME_RATIO.  The user may define a total amount of ballast to use as the yo behavior argument BPUMP_VALUE, stored as sensor C_AUTOBALLAST_VOLUME. After each yo, Ballast Control shifts the ballast by set amount DELTA_BPUMP_BALLAST, until it converges on the desired  dive and climb times with the desired total amount of ballast.  
+While Ballast Control is running, Speed Control runs in the background, ensuring against too slow speeds.
+- The Speed Control provides speed (in our case depth rate) feedback control.  This control mode queries the local vehicle speed (depth rate) and compares it to the minimum and maximum speed requirements.  It adjusts the amount of ballast by set amount DELTA_BPUMP_SPEED until the vehicle speed is within the required limits.  
+
+
+## HOW-TO USE IT (SHORT VERSION) ##
+You'll probably want to type 'loadmission ab_init.mi', to re-initialize Autoballast sensors if you've previously run (see the 'Autoballast Sensor Reset' section below.)
+A sample yo file (yo14.ma) is located in the target-glider/electric-[200/1000]/mafiles directory. 
+The shallowest depth Autoballast has been tested for is 30 m (to allow for sufficient time to calculate the climb and dive times), however, shallower depths are possible--just keep on eye on the performance.
+
+In your mission file, specify this .ma file in your yo behvaior, i.e.:
+behavior: yo
+    b_arg: args_from_file(enum) 14   # read from mafiles/yo14.ma
+    b_arg: start_when(enum) 2        #  0-immediately, 1-stack idle 2-depth idle
+    b_arg: end_action(enum) 2        # 0-quit, 2 resume  
+
+
+## HOW-TO USE IT (LONG VERSION) ##
+--Yo behavior parameters
+behavior: yo
+    # arguments for dive_to
+    b_arg: d_target_depth(m) 30    # how deep to dive
+    b_arg: d_target_altitude(m) -1 # stop this far from bottom, <0 disables
+
+    b_arg: d_use_bpump(enum) 0     # 0  Autoballast/Speed control.  
+    b_arg: d_bpump_value(X) 300.0 # use_bpump == 0   Total amt of ballast, stored as C_AUTOBALLAST_VOLUME
+
+                                 # pitch_mode_t values - battery or fluid fore/aft control
+    b_arg: d_use_pitch(enum)      3   # 1:battpos  2:setonce  3:servo
+                                      # Need to use pitch servo mode for autoballast
+    b_arg: d_pitch_value(X)   -0.4528     # -26 deg
+
+    b_arg: d_stop_when_hover_for(sec) 180.0 # terminate dive when depth does not change for
+                                          # this many secs. If glider is coming up early, i.e. 
+					  # receive error "Complete, WE GOT STUCK not moving vertically",
+					  # may need to set this value larger (800 sec?).
+    b_arg: d_stop_when_stalled_for(sec) 240.0 # terminate dive when glider not moving thru water
+                                          # this many secs. If glider is coming up early, i.e. 
+					  # receive error "Complete, WE GOT STUCK not moving horizontally",
+					  # may need to set this value larger (800 sec?).
+                                           # this many secs, 
+    b_arg: d_speed_min(m/s) -100.0 	#vertical minimum dive speed for speed control SM_SPEED
+                                          # User should set this to a positive value (dive rate > 0), otherwise, it gets set to default f_speed_min
+    b_arg: d_speed_max(m/s) 100.0  	#vertical maximum dive speed for speed control SM_SPEED
+    
+    
+    b_arg: d_depth_rate_method(enum) 3 #method of filtered depth rate to use for speed control
+                                          # 0= raw m_depth_rate
+                                          # 1= m_depth_rate_subsample
+                                          # 3 = running average.  (see description of m_depth_rate_avg_final)
+    b_arg: d_wait_for_pitch(bool) 1 #if true, wait for pitch/batt pos dynamics to settle before enabling speed control.
+    b_arg: d_wait_for_ballast(sec) 100.0 # wait this many seconds after ballast pump has stopped moving (inflection only) before 
+					#enabling speed control. b_arg value stored as c_wait_for_ballast
+    b_arg: d_delta_bpump_speed(X) 50.0 #amount of ballast to add to bpump in order to reach desired speed.  Should always be positive.  b_arg value stored as c_delta_bpump_speed. 
+    b_arg: d_delta_bpump_ballast(X) 25.0  #amount of ballast to add to bpump in order to converge on ballast.  If < deadband, diveclimb.c will set it to deadband 
+					# b_arg value stored as c_delta_bpump_ballast.
+    b_arg: d_time_ratio(X) 1.1 #ratio of climb/dive times that must be maintained for speed control.
+    b_arg: d_use_sc_model(bool) 0 	#if using model of veh for SM_SPEED.  Always set to 0 for now until the model is designed
+       
+    # arguments for climb_to
+    b_arg: c_target_depth(m) 7    # how deep to dive
+    b_arg: c_target_altitude(m) -1 # stop this far from bottom, <0 disables
+
+                                 # bpump_mode_t values - ballast control
+    b_arg: c_use_bpump(enum)      0
+    b_arg: c_use_pitch(enum)      3   # 1:battpos  2:setonce  3:servo
+                                      # Need to use pitch servo mode for autoballast
+    b_arg: c_pitch_value(X)     0.4538     # 26 deg
+
+    b_arg: c_stop_when_hover_for(sec) -1.0 # terminate dive when depth does not change for
+                                         # this many secs, <0 to disable
+    b_arg: c_stop_when_stalled_for(sec) 240.0 # terminate dive when glider not moving thru water
+                                          # this many secs. If glider is coming up early, i.e. 
+					  # receive error "Complete, WE GOT STUCK not moving horizontally",
+					  # may need to set this value larger (800 sec?).
+    b_arg: c_speed_min(m/s) 100.0	  #vertical minimum dive speed for speed control SM_SPEED.  
+					  # User should set this to a negative value (climb rate < 0), otherwise, it gets set to -f_speed_min
+    b_arg: c_speed_max(m/s) -100.0  	#vertical maximum dive speed for speed control SM_SPEED
+    
+
+
+
+--Masterdata sensors (see masterdata section "sensors for autoballast/speed control" for full list):
+sensor: c_autoballast_state(enum) 0 # in/out, describes the current state of autoballast.  The user may also change its value to force autoballast to change state
+	# 0=uninitialized.
+	# 1=initialized, still converging
+	# 2=converged to volume, times are balanced
+	# 3=converged to volume, times are unbalanced
+	# 3=converged unsuccessfully: abs(c_dive_bpump) or c_climb_bpump > X_BALLAST_PUMPED_MAX/X_DE_OIL_VOL_MAX
+	# 4=converged unsuccessfully: c_climb_bpump - c_dive_bpump < c_autoballast_volume (d_bpump_value)
+	# 5=converged unsuccessfully: may be a bit more complicated. Consider examining .mlg
+If any b_arg's are changed mid-mission and re-read (ctrl-F), Autoballast will re-read these even if in initialized state _EXCEPT_ for d_bpump_value and delta_bpump_ballast.  If the user changes either of these sensors mid-mission, then they also need to change the autoballast_state to 0 (put c_autoballast_state 0). 
+
+sensor: u_autoballast_abort(bool) 0 #in, user sets this sensor.  if autoballast fails to converge, then abort if true.  if false, c_autoballast_state will change to 3 and continue with the last ballast amounts
+
+sensor: u_autoballast_end_on_converge(bool) 0 #in.  If true, end autoballast adjustments to c_[climb/dive] once converged.  If false, keep running autoballast.
+
+
+
+--sbdlist and config.srf
+Suggested sensors for sbdlist.dat:
+m_depth
+m_pitch
+m_battpos
+m_coulomb_current # for energy analysis
+m_depth_rate_avg_final #if depth_rate_method=3
+[c,m]_de_oil_vol (deep glider)
+[c,m]_ballast_pumped (shallow glider)
+m_dive_tot_time
+m_climb_tot_time
+c_dive_bpump
+c_climb_bpump
+
+Suggested sensors for config.srf
+c_dive_bpump
+c_climb_bpump
+c_autoballast_state
+
+## FAQ ##
+Q: What happens if Autoballast fails to converge, i.e. perhaps the glider is too heavy for the desired c_autoballast_volume?
+A: The user can specify u_autoballast_abort if software will abort or continue on.  The state is reflected in c_autoballast_state.
+
+Q: Are there any changes required to the traditional stock.mi/glmpc.mi mission?
+A:  It is suggested that the user NOT use the 'Come up every way point' surface behavior, i.e. 
+behavior: surface
+    b_arg: start_when(enum)    8
+If the user does employ this surface behavior, it should not affect the Autoballast algorithm (as Autoballast recognizes when the veh ballast changes due to a surface behavior being triggered), however this surface behavior will just prolong the time that it takes to converge on the desired ballast amounts.
+
+Q: The ballast pumped is not constant throughout the course of the dive or climb OR the glider is inflecting early and it's not due to altimeter hits.
+A: There are several possibilities.
+- The glider may be inflecting early due to the stop_when_stalled_for and stop_when_hover_for b_args.  If the .mlg file has "WE GOT STUCK not moving horizontally" or a "WE GOT STUCK not moving vertically", then this is the case. You can increase the values of these sensors in the yo file, with the following b_args:
+    b_arg: d_stop_when_hover_for(sec) 800.0 # terminate dive when depth does not change for
+                                         # this many secs, <0 to disable
+    b_arg: d_stop_when_stalled_for(sec) 800.0 # terminate dive when glider not moving thru water
+    b_arg: c_stop_when_hover_for(sec) -1.0 # terminate dive when depth does not change for
+                                         # this many secs, <0 to disable
+    b_arg: c_stop_when_stalled_for(sec) 800.0 # terminate dive when glider not moving thru water
+You can also turn these off completely by setting the value to -1, however this puts you at risk if you actually do get stuck.
+- Speed control is getting engaged.  This would be reflected in c_speed_ctrl, which should be changed to 1 during that dive or climb.  This would cause the ballast amount to increase (climb) or decrease (dive) by d_delta_bpump_speed
+
+
+
+## AUTOBALLAST SENSOR RESET ##
+If you've already run Autoballast and want to re-run, a few sensor values should be reset.
+File ab_init.mi should be in the missions directory.  To restore sensor defaults, type 'loadmission ab_init.mi'.  The following sensor values will be set (you can always set them with a 'put' command...it's just easier to perform a loadmission.)
+sensor: c_autoballast_state(enum) 0 # Forces Autoballast to perform initialization
+sensor: c_dive_bpump(X) -1000.0 # in/out, amt of ballast used in a dive in autoballast control. Reset to -1000, software will set to pump limit 	
+sensor: c_climb_bpump(X) 1000.0 # in/out, amt of ballast used in a climb in autoballast control. Reset to 1000, software will set to pump limit 
+
+
+## BALLAST CONTROL DESCRIPTION ##
+1. Autoballast first goes through initialization.  If it has not been initialized, then C_AUTOBALLAST_STATE = 0.  Initialize the DIVE_BPUMP and CLIMB_BPUMP values: load the user specified autoballast b_args (bpump_value,speed_min,etc).  A bunch of these parameters will be printed to screen and are all recorded in the .mlg file.  See sample .mlg file below for an example.
+
+2. Dive from surface to DIVE_TARGET_DEPTH, with DIVE_BPUMP = -max ballast.  Start the clock once the glider depth is deeper than CLIMB_TARGET_DEPTH (to discount inflection), and stop the clock once the glider reaches DIVE_TARGET_DEPTH or inflects due to reaching altitude.  This is the total dive time DIVE_TOT_TIME.  
+
+3.  Start the clock once the glider reaches DIVE_TARGET_DEPTH again (or the final dive depth if it inflected early due to altitude) (to discount inflection).  Climb with CLIMB_BPUMP = max ballast.  Stop the clock when the glider reaches the CLIMB_TARGET_DEPTH.  This is the total climb time CLIMB_TOT_TIME.   
+
+4.  At the end of each dive/climb interval, calculate the ratio of total climb time to total dive time and adjust the ballast accordingly by amount DELTA_BPUMP_BALLAST. Again, the results of  bunch of these parameters will be printed to screen and recorded in the .mlg file, such as "AB: Time to Dive: ..." etc.
+ 
+5.  SPEED CONTROL is active during the BALLAST CONTROL. If SPEED_CONTRAL is engaged, the time to dive or climb is not discounted. 
+
+7. Once the DIVE_BPUMP and CLIMB_BPUMP values are adjusted to achieve the desired dive/climb time ratio and we're using the user-specified total amount of ballast, C_AUTOBALLAST_CONVERGED = 1, and transition to SPEED CONTROL MODE only.  DIVE_BPUMP and CLIMB_BPUMP are not calculated again throughout the mission. In the .mlg file, you will see the following message: "AB: Got the timing down! Ratio of Climb/Dive times:%2.3f.\n",sensor(M_CLIMB_TOT_TIME)/sensor(M_DIVE_TOT_TIME))
+
+Notes:
+Autoballast will discount a specific yo from its calculation (by setting either DIVE_TOT_TIME or CLIMB_TOT_TIME to -1) for the following scenarios:
+- Inflect after a dive before the CLIMB_TARGET_DEPTH (probably due to a bad altimeter hit)
+- If another behavior caused the ballast command to change (i.e. a timeout causes the glider to surface)
+Any errors are printed to the .mlg file.  Again, you can search for "AB:", and if an error message, it should provide you with the function that produced the error.
+
+
+## SPEED CONTROL DESCRIPTION##
+1. Begin the dive or climb at ballast DIVE_BPUMP or CLIMB_PUMP respectively.
+2. When the system dynamics have settled i.e. when pitch and ballast control errors (commanded-measured) are within deadbands, sample the local vehicle depth rate and compare it to the minimum and maximum speeds.  Adjust the ballast by DELTA_BPUMP_SPEED.  
+
+
+
+## LOCAL DEPTH RATE ##
+There are several different methods of calculating the local vehicle depth rate.  
+Mode 0: m_depth_rate:  calculates the depth rate every time that a new depth value is published.
+Mode 1: m_depth_rate_subsampled:  waits f_depth_subsampling_rate seconds to calculate a new depth rate.  This method may reduce the noise in depth sensor measurements as the error is distributed over a wider distance
+Mode 2: to be created.  a filtered depth 
+Mode 3: m_running_average:  Calculate a running average for a defined number of data samples
+	M_DEPTH_RATE_RUNNING_AVG[i+1] = (M_DEPTH_RATE[i+1] + [i+1]*M_DEPTH_RATE_RUNNING_AVG[i])/(i+2)
+	The number of data points to use in this calculation is C_DEPTH_RATE_RUNNING_AVG_NUM.
+	Once the specified number of data samples has been collected, the final calculation is
+	published as M_DEPTH_RATE_AVG_FINAL
+
+
+## SAMPLE .MLG OUTPUT ##
+Autoballast produces a bunch of messages stored in the .mlg file that may be useful for interpreting behavior.  All Autoballast messages are prefaced with "AB:", so you can search through the .mlg for any lines prefaced with "AB:".
+An example file is listed below, with comments denoted by //:  
+
+  114.18    behavior dive_to_701: SUBSTATE 1 ->3 : Starting the dive
+// Read in the dive b_args, and check them against limits.
+AB: d_b_arg speed_min -100.000 < F_MIN 0.050
+AB: new d_b_arg speed_min: 0.050
+AB: Initializing
+AB: Dive speed min: 0.050[m/s]
+AB: Dive ballast: -233.00
+AB: Delta bpump (speed): 50.00
+AB: Delta bpump (ballast): 25.00
+AB: Wait for pitch?: 1
+AB: Wait for ballast?:  100.0[s]
+AB: Depth rate method: 3
+AB: Time Ratio: 1.10
+114.31    behavior dive_to_701: SUBSTATE 3 ->4 : diving
+...
+...
+  307.39 55 behavior dive_to_701: SUBSTATE 4 ->5 : Complete reached depth
+  307.42    behavior dive_to_701: STATE Active -> Complete
+  307.46    behavior climb_to_702: STATE UnInited -> Active
+...
+...
+  231.21    behavior climb_to_702: SUBSTATE 1 ->3 : Starting the climb
+// Read in the climb b_args, and check them against limits.  
+AB: c_b_arg speed_min 100.000 < F_MIN -0.050
+AB: new c_b_arg speed_min: -0.050
+AB: Climb speed min: -0.050[m/s]
+AB: Climb ballast: 233.00
+  231.28    behavior climb_to_702: SUBSTATE 3 ->4 : climbing
+  235.07 37 behavior sample_8: SUBSTATE 1 ->3 : Climbing
+// After every yo, the performance of that yo is recorded (Time to Dive/Climb), and what the Climb and/or Dive ballast adjustments are.s
+AB: Time to Dive:       72, Climb:       81 [s]
+AB: Previous ballast: Dive:-233.00, Climb:233.00
+AB: Ratio of Climb/Dive times 1.125 >= 1.100
+AB: Adjust ballast: Dive+= 25.00
+AB: New ballast: Dive:-208.00, Climb:233.00
+  330.04 59 behavior climb_to_702: SUBSTATE 4 ->5 : Complete reached depth
+...
+...
+// When Autoballast converges on a solution, it prints out the following statement and C_AUTOBALLAST_STATE = 2 or 3. 
+  1354 97 behavior sample_8: SUBSTATE 1 ->3 : Climbing
+AB: Time to Dive:      115, Climb:      107 [s]
+AB: Previous ballast: Dive:-137.50, Climb:162.50
+AB: Got the timing down! Ratio of Climb/Dive times:0.930.
+AB: C_AUTOBALLAST_STATE:   2
+AB: New ballast: Dive:-137.50, Climb:162.50
+  1470 24 behavior climb_to_702: SUBSTATE 4 ->5 : Complete reached depth
+

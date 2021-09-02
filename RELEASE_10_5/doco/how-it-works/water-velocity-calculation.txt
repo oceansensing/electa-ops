@@ -1,0 +1,185 @@
+doco/water-velocity-calculations.txt
+
+This document describes how the Webb Research Glider
+infers the water velocity (currents) from differences
+between dead reckoned (x,y) locations and gps (x,y)
+locations.
+
+26-Jan-02 tc@DinkumSoftware.com     Initial
+04-Feb-02 tc@DinkumSoftware.com     Added M_initial/final_WATER_Vx/y
+21-Sep-07 hfargher@webbresearch.com Updated M_DR_FIX_TIME to 
+				    M_DR_POST_FIX_TIME on line 83
+
+ABSTRACT
+While underwater, the glider dead reckons it's position relative
+to the water.  When surfaced, the glider receives a precise location
+from its gps.  ASSUMING THAT THE DEAD RECKONING AND GPS ARE PERFECT,
+any errors between the gps fix and the final dead reckoned position
+must be due to water movement (currents) while the glider is underwater.
+
+The glider can use the measured water current in its next underwater
+segment to navigate better.
+
+This scheme strongly depends on the accuracy of the dead reckoning.
+Any error in the dead reckoning (or the gps) will cause an erroneous
+water current to be computed.
+
+
+DEAD RECKONING OVERVIEW
+While underwater, the glider navigates by measuring its vertical
+motion thru the water column, its pitch, and its heading.
+The vertical speed adjusted by the tangent of the pitch angle
+gives a horizontal speed (relative to the water).  The heading
+from the compass gives a horizontal velocity (relative to the
+water).  Integrating this horizontal velocity over time provides
+a series of (x,y) fixes.  These values are stored in (M_X_LMC, M_Y_LMC).
+
+
+COORDINATE SYSTEM
+A note on coordinate systems,  most of the work in the glider is
+done in the LMC (Local Mission Coordinates) coordinates.  (0,0) of
+the LMC coordinate system is defined as the glider's location when
+the mission starts.  The LMC Y axis is defined to point magnetic north.
+There are various routines to translate back and forth between
+latitude/longitude and LMC.
+
+
+GENERAL DESCRIPTION
+
+Please refer to doco/figures/water-velocity-calculation-fig1.*
+[The figure is available in pdf, jpg, and fig formats.  fig
+is the proprietary output format of the Linux Xfig program.]
+
+Variables below in ALL CAPITOLS represent sensor values that are
+stored in the glider and transmitted in a *.dbd file.
+
+At time Ta, the glider dives and surfaces at time Tb.
+The dotted line between Ta and Tb represents the actual path the glider
+took underwater.  The solid line between Ta and Tb represents the
+dead reckoned trajectory of the glider, i.e. where it thought it
+was.  The glider thinks it surfaces at point:
+      (M_DR_SURF_X_LMC, M_DR_SURF_Y_LMC)
+
+The red vector connecting the two Tb points represents the error in
+dead reckoning.  That vector divided by the time underwater (Tb - Ta)
+will produce the average water velocity vector.
+
+Unfortunately, the actual glider position at Tb can't be measured.
+It typically takes the glider a minute or two to receive it's first
+gps fix.  During this time, the wind drives the glider in a completely
+different direction on the surface.  At time Tc, the glider receives
+it's first gps location on the surface:
+
+    (X_GPS_FIX_X_LMC, X_GPS_FIX_Y_LMC)
+
+The blue vector (M_DR_X_INI_ERR, M_DR_Y_INI_ERR) represents the
+initial difference between the dead reckoning and the gps.  The
+glider divides this initial error by M_DR_TIME (Tb-Ta) to produce
+(M_WATER_VX, M_WATER_VY).  This initial estimate of water velocity
+includes the surface drift error when the glider is drifting
+on the surface for M_DR_FIX_TIME seconds while waiting for it's
+first gps fix.
+
+To correct for this error, the glider waits M_DR_POST_FIX_TIME
+seconds and takes another gps fix at time Td producing location
+(M_GPS_POSTFIX_X_LMC, M_GPS_POSTFIX_Y_LMC).  The green vector
+represents how much the glider has drifted during this post fix
+time.
+
+Assuming a constant surface drift velocity and if M_DR_POSTFIX_TIME
+were exactly the same as M_DR_FIX_TIME, then the desired red vector
+is the blue vector minus the green vector:
+
+    (M_DR_X_ACTUAL_ERR,    M_DR_Y_ACTUAL_ERR)        =
+        (M_DR_X_INI_ERR,       M_DR_Y_INI_ERR)       -
+        (M_DR_X_POSTFIX_DRIFT, M_DR_Y_POSTFIX_DRIFT) 
+
+In actual practice, the green vector is "time adjusted", i.e.
+it is shrunk or expanded by M_DR_POSTFIX_TIME/M_DR_FIX_TIME before
+being subtracting from the blue vector.
+
+The red vector (M_DR_X_ACTUAL_ERR, M_DR_Y_ACTUAL_ERR) is divided
+by M_DR_TIME to produce the final estimate of (M_WATER_VX, M_WATER_VY).
+
+Each of the computed water velocities are "clipped" by U_MAX_WATER_SPEED
+to provide a reasonableness check.  If the magnitude of
+(M_WATER_VX, M_WATER_VY) is greater than U_MAX_WATER_SPEED, the resulting
+water velocity vector is "shrunk" without changing its direction.
+
+When the the water velocity is calculated, the glider needs to know whether
+the water velocity was being used as part of the dead reckoning navigation.
+If it was, the water velocity calculated must be added to the water velocity
+used for navigation (X_PRIOR_SEG_WATER_VX, X_PRIOR_SEG_WATER_VY).
+
+To make it easier for host side post-processing, the initial
+M_WATER_Vx/y is published as M_INITIAL_WATER_Vx/y.  The second
+M_WATER_Vx/y is published as M_FINAL_WATER_Vx/y.
+
+
+THE CODE DETAILS:
+
+All of these calculations are done in:
+
+    code/sensor_processing.c/compute_water_velocity()
+
+This function is called every cycle and implements a state
+machine.  The current state is reflected in X_DR_STATE:
+
+        wvs_mission_start(0)
+        wvs_underwater(1)
+        wvs_awaiting_fix(2)
+        wvs_awaiting_postfix(3)
+        wvs_awaiting_dive(4)
+
+
+When the glider dives:
+     remembers the time of the dive in an internal variable, time_a.
+     --> state wvs_underwater(1)
+
+When the glider surfaces, it:
+    remembers the time in time_b
+    M_DR_TIME = time_b - time_a
+    M_DR_SURF_x/y_LMC = M_x/y_LMC
+    state wvs_underwater --> state wvs_awaiting_fix
+
+When the glider gets its first gps fix:
+     remembers the time in internal variable time_c
+     M_DR_FIX_TIME = time_c - time_b         
+     X_PRIOR_SEG_WATER_Vx/y = M_WATER_Vx/y
+     M_GPS_FIX_x/y_LMC = M_GPS_x/y_LMC
+     M_DR_x/y_INI_ERR = M_GPS_FIX_x/y_LMC - M_DR_SURF_x/y_LMC
+     M_WATER_Vx/y = M_DR_x/y_INI_ERR / M_DR_TIME [see note below]
+     M_INITIAL_WATER_Vx/y = M_WATER_Vx/y
+     state state wvs_awaiting_fix --> wvs_awaiting_postfix
+
+After drifting for M_DR_FIX_TIME seconds (or whenever it dives):
+     remember the time in internal variable time_d
+     M_DR_POSTFIX_TIME = time_d  - time_c
+     M_GPS_POSTFIX_x/y_LMC = M_GPS_x/y_LMC
+     M_DR_x/y_POSTFIX_DRIFT = M_GPS_POSTFIX_x/y_LMC - M_GPS_FIX_x/y_LMC
+     
+     ; timeadjust and flip sign
+     taf = M_DR_FIX_TIME / M_DR_POSTFIX_TIME
+     M_DR_x/y_TA_POSTFIX_DRIFT = - M_DR_x/y_POSTFIX_DRIFT * taf
+
+     ; Compute final error
+     M_DR_x/y_ACTUAL_ERR = M_DR_x/y_INI_ERR + M_DR_x/y_TA_POSTFIX_DRIFT
+
+     M_WATER_Vx/y = M_DR_x/y_ACTUAL_ERROR / M_DR_TIME [see note below]
+     M_FINAL_WATER_Vx/y = M_WATER_Vx/y
+
+     state wvs_awaiting_postfix --> wvs_awaiting_dive
+
+
+Note:
+    When computing the water velocity, the glider examines
+    U_USE_CURRENT_CORRECTION to determine if the prior segment
+    dead reckoning was using M_WATER_Vx/y in navigation.
+
+    if U_USE_CURRENT_CORRECTION is non-zero, integrate:
+      M_WATER_Vx/y = X_PRIOR_SEG_WATER_Vx/y + M_???_ERROR/M_DR_TIME
+
+      
+    if U_USE_CURRENT_CORRECTION is zero, don't integrate:
+      M_WATER_Vx/y = M_???_ERROR/M_DR_TIME
+

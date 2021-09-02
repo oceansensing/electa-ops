@@ -1,0 +1,274 @@
+\documentclass[10pt]{article}
+\setlength{\topmargin}{-.5in}
+\setlength{\textheight}{9in}
+\setlength{\oddsidemargin}{.125in}
+\setlength{\textwidth}{6.25in}
+
+
+\usepackage{amssymb,amsmath}
+\usepackage{graphicx}
+\begin{document}
+\title{Angle of Attack and Slocum Vehicle Model}
+\date{01 March 2011}
+\author{Lauren Cooney\\ lcooney@teledyne.com}
+\maketitle
+\section{Intro}
+While underwater, the glider dead reckons its position relative to the last GPS fix.  For a glider without a DVL, the inputs are vehicle depth and pitch.  Without the use of a DVL, any error between the final dead reckoned position and GPS surface fix is attributed to water currents (see /doco/how-it-works/water-velocity-calculations.txt).  The horizontal position is the horizontal velocity integrated over time.  It is clear that it is important to get the horizontal velocity as accurate as possible.  We don't directly measure the horizontal velocity.  It is a function of the measured vertical speed $vs$ [m/s] (time derivative of pressure sensor output), measured pitch $\theta$ [rad], and estimated angle of attack $\alpha$ [rad]:
+\begin{equation}
+\tan{(\theta+\alpha)} = \frac{-vs}{hs}
+\end{equation}  
+for vehicle coordinate system shown in Fig. \ref{fig:coords}.  
+      \begin{figure}[htb]
+        \center{\includegraphics[width=60mm,angle=-90]
+{/home/lcooney/Documents/Customer/AoA/latex/images/veh_coord.pdf}}
+        \caption{\label{fig:coords} Slocum glider global reference frame.}
+      \end{figure}
+
+The purpose of this document is to describe the method for calculating the estimated vehicle angle of attack.
+
+Please note that this is a working document.  
+
+\section{Model Coefficients}
+\subsection{Geometry}
+\begin{center}
+\begin{tabular}{lccc}
+\hline
+\hline
+length & L & 1.5 & $m$\\
+hull diameter & D & 0.22 & $m$ \\
+sweep angle & $\Lambda$ & 0.785 & $rad$\\
+wing area & S & 0.0927  & $m^2$\\
+wing span & b &0.99 &$m$\\
+weight in air (shallow) & $m_{Gs}$ & 52 &$kg$\\
+weight in air (deep) & $m_{Gd}$ & 56 & $kg$\\
+\hline
+\end{tabular}
+\end{center} 
+Slocum Electric Geometry.  Note that wing span $b$ and area $S$ includes both fins 
+
+\subsection{Equations of Motion in Global Refence Frame}
+We create a simplified model of a glider in quasi-steady flight, following the methods of \cite{Merckelbach:2009}:
+\begin{align}
+\label{eq:horiz}\sum F_x &= 0 = -F_D \cos{\zeta} - F_L\sin{\zeta}\\
+\label{eq:vert}\sum F_z &= 0 = F_G - F_B + F_D\sin{\zeta} - F_L\cos{\zeta}
+\end{align}
+with drag force $F_D$, lift force $F_L$, buoyancy force $F_B$, force due to gravity $F_G$, and glide angle $\zeta$, where  $\zeta =\theta +\alpha$.  Drag force and lift force are functions of surrounding fluid density $\rho$, reference area $A_f$, relative velocity $v$, and coefficients of drag and lift $C_D$ and $C_L$ respectively:
+\begin{align}
+\label{eq:Fd}F_D &= \frac{1}{2}\rho C_D A_f v|v|\\
+\label{eq:Fl}F_L &= \frac{1}{2}\rho C_L A_f v|v|
+\end{align}
+We substitute eqns. \ref{eq:Fd} and \ref{eq:Fl} into eqn. \ref{eq:horiz} to find:
+
+\begin{equation}\label{eq:balance}
+C_D \cos{\zeta}= -C_L \sin{\zeta}\\
+\end{equation}
+
+
+
+\subsection{Lift}
+The total coefficient of lift $C_L$ is the sum of lift due to the hull $C_{Lh}$ and lift due to the wings $C_{Lw}$
+\begin{equation}
+C_L = C_{Lh} + C_{Lw}
+\end{equation}
+
+\subsubsection{Body Lift}
+For small angles of attack, Hoerner \cite[pg. 13-2 and 19-13]{Hoerner:1985} defines non-dimensional lateral force coefficient due to the hull $C_{Lh}$ as a function of angle  of attack$\alpha$. 
+\begin{equation}
+\begin{split}
+C_{Lh} &= \frac{dC_{Lh}}{d\alpha}\alpha\\
+&= \frac{L}{D}\frac{dC_{Lh}}{d\alpha}\alpha
+\end{split}
+\end{equation}
+for which $\frac{dC_{Lh}}{d\alpha}=0.003$ deg$^{-1} = 0.172 $ rad$^{-1}$, and $D$ and $L$ are the diameter and length of the hull respectively.  We find the coefficient of lift due to the hull $C_{Lh}$:
+\begin{equation}
+C_{Lh} = 1.172\beta
+\end{equation}
+
+\subsubsection{Wing Lift}
+The coefficient of lift due to the wings $C_{Lw}$ is determined using lift theory of swept wings.
+\begin{equation}
+C_{Lw} = \frac{dC_{Lw}}{d\alpha}\alpha
+\end{equation}
+The aspect ratio for the wings $AR_{w}$ is
+\begin{align}
+AR_w &= \frac{b^2}{S}\\
+&= 10.573
+\end{align}
+For wings with aspect ratio $>$4, \cite[pg. 15-7]{Hoerner:1985} gives 
+\begin{align}
+\frac{dC_{Lw}}{d\alpha^\circ} &= \frac{\cos{\Lambda}}{10+20/AR_w}\\
+&=\frac{\cos 0.785}{10+20/10.573}\\
+&=0.0595~\text{deg}^{-1}
+\end{align}
+for which we find the coefficient of lift to be
+\begin{align}
+C_{Lw} &= \frac{dC_{Lw}}{d\alpha}\alpha \\
+&=(0.0595*\frac{180}{\pi})\alpha\\
+&=3.40987\alpha
+\end{align}
+
+\subsection{Drag}
+The total coefficient of drag $C_D$ is the sum of drag due to pressure $C_{Do}$ and induced drag $C_{Di}$
+\begin{equation}
+C_L = C_{Lh} + C{Lw}
+\end{equation}
+Reynolds number $R_e$ is the ratio of inertial to viscous forces, given in \cite[Table A.2]{Newman:1977} as
+\begin{equation}\label{eq:Re}
+R_e = \frac{uL}{\nu}
+\end{equation}
+for speed \textit{u}, characteristic length \textit{L}, and fluid kinematic viscosity $\nu$, where $\nu$ is taken to be $1.35$x$10^{-6}m^2/s$ at 10$^\circ$deg C.  Fig. \ref{fig:Re} shows Reynolds Number as a function of characteristic glide speed $u$ for a Slocum glider.
+
+      \begin{figure}[htb]
+        \center{\includegraphics[width=100mm]
+{/home/lcooney/Documents/Customer/AoA/latex/images/Re.pdf}}
+        \caption{\label{fig:Re} Reynolds Number as a function of glide speed $u$}
+      \end{figure}
+
+Hoerner \cite[pg. 6-16]{Hoerner:1964} defines subcritical conditions to be $R_e < 10^5$, and the transitional range around $R_e ~ 10^6$.  Slocum gliders generally operate between these subcritical and transitional ranges, however it should be noted that turbulent flow may be tripped due to inconsistencies in the hull smoothness.  
+
+
+\subsubsection{Pressure Drag}
+%Look at Hoerner chapter VI Streamline Drag, starting at 6-15. 
+
+%%For subcritical Reynolds numbers, Hoerner \cite[pg. 6-16]{Hoerner:1964} finds the pressure drag coefficient $C_{Do}$, 
+%%\begin{equation}\label{eq:Cdo_616}
+%%C_{Do} = 0.33(D/L)+4C_f(L/D)+4C_f(D/L)^2
+%%\end{equation}
+%%whereas on \cite[pg. 3-12]{Hoerner:1964} the coefficient of drag due to pressure $C_{Do}$
+Hoerner \cite[pg. 3-12]{Hoerner:1964} finds the coefficient of drag due to pressure $C_{Do}$ to be:
+
+\begin{equation}\label{eq:Cdo_312}
+C_{Do} = 0.44\frac{D}{L}+4C_f(R_e)\frac{L}{D}+4C_f(R_e)  \frac{D}{L}^2
+\end{equation}
+where friction-drag coefficient $C_f$ is a function of Reynolds Number (fig. \ref{fig:Cf}).  
+
+%Note that this is probably a low estimate for ocean operations.  
+
+      \begin{figure}[htb]
+        \center{\includegraphics[width=100mm]
+{/home/lcooney/Documents/Customer/AoA/latex/images/C_f_Laminar.pdf}}
+        \caption{\label{fig:Cf} Laminar Skin-Friction coefficient $C_F$ as a function of Reynolds Number.  From \cite[pg. 6-16]{Hoerner:1964} }
+      \end{figure}
+
+\subsubsection{Induced Drag}
+From \cite[pg. 7-2]{Hoerner:1964} we find the induced drag coefficient, or drag due to lift $C_{Di}$ 
+\begin{align}
+C_{Di} &= \frac{C_L^2}{AR\pi}\\
+&=\frac{C_{Lh}^2}{AR_h\pi }+\frac{C_{Lw}^2}{AR_w \pi }\\
+&=\frac{(1.172\alpha)^2}{0.147\pi}+\frac{(3.41\alpha)^2}{10.573\pi}\\
+%&=\frac{(0.025\alpha)^2}{0.15\pi}+\frac{(3.41\alpha)^2}{10.53\pi}\\
+&=\frac{dC_{Di}}{\alpha^2}\alpha^2\\
+&=3.331\alpha^2
+\end{align}
+where the aspect ratio of the hull $AR_h=D/L$ 
+
+\subsection{Putting it all together}
+\begin{align}
+C_L &= C_{Lh}+ C_{Lw}\\
+&=( \frac{dC_{Lh}}{d\alpha}+ \frac{dC_{Lw}}{d\alpha})\alpha\\
+&= (1.172 + 3.408)\alpha\\ 
+&=4.580\alpha
+\end{align}
+
+\begin{align}
+C_D &= C_{Do}+ C_{Di}\\
+&= C_{Do}+ \frac{dC_{Di}}{d\alpha^2}\alpha^2\\
+&= C_{Do}(R_e) +3.33\alpha^2
+\end{align}
+
+Referring back to  eq. \ref{eq:balance}:
+\begin{align}\label{eq:aoa}
+C_D \cos{\zeta}&= -C_L \sin{\zeta}\\
+(C_{Do}+ \frac{dC_{Di}}{d\alpha^2}\alpha^2)\cos{\zeta}&=- ( \frac{dC_{Lh}}{d\alpha}+ \frac{dC_{Lw}}{d\alpha})\alpha)\sin{\zeta}\\
+(C_{Do}(R_e)+3.33\alpha^2)\cos{(\theta+\alpha)}&=- (4.580)\alpha)\sin{(\theta+\alpha)}
+\end{align}
+
+For given pitch angle $\theta$ and glide speed $u$ (which allows us to solve for $R_e$ and therefore $C_{Do}$, we can solve for angle of attack $\alpha$.  It gets a bit messy, so as suggested by \cite{Merckelbach:2010}, we solve using an iterative approach.  Figure \ref{fig:AoA_pitchu} shows calculated angle of attack for a range of pitch and vehicle depth rates, for which vehicle vertical depth rate $vs$ =$u\sin{(\theta+\alpha)}$.
+
+      \begin{figure}[htb]
+        \center{\includegraphics[width=100mm]
+{/home/lcooney/Documents/Customer/AoA/latex/images/AoA_vs_pitch_incVel.pdf}}
+        \caption{\label{fig:AoA_pitchu} Angle of attack $\alpha$ as a function of pitch angle $\theta$ for several vehicle depth rates $vs$.}
+      \end{figure}
+
+\subsection{Universal Equation for Angle of Attack as a Function of Pitch and Depth Rate}
+In order to minimize computational cost of the angle of attack, we can characterize the angle of attack as a function of a given pitch angle and depth rate.  The following equations were found to minimize the error between angle of attack computed using eq. \ref{eq:aoa} and angle of attack computed using the universal equation.  
+For climbing ($\theta > 0$ and vertical speed $vs < 0$):   
+\begin{align}
+    \alpha = &0.4830\theta^4-1.1073\theta^3+0.9834\theta^2-0.4521\theta+0.1246\\ &-0.00873 +  0.045* 10^{-0.750} \frac{-0.220}{vs}
+\end{align}
+and for diving ($\theta < 0$ and vertical speed $vs > 0$):  :   
+\begin{align}
+   \alpha =& -0.4830\theta^4-1.1073\theta^3-0.9834\theta^2-0.4521\theta-0.1246\\ &-0.00873 +  0.045* 10^{-0.750}  \frac{-0.220}{vs}
+\end{align}
+
+Figure \ref{fig:fit} shows how angle of attack solved using these two equations match up to simulated angle of attack.
+      \begin{figure}[htb]
+        \center{\includegraphics[width=100mm]
+{/home/lcooney/Documents/Customer/AoA/latex/images/AoA_fit.pdf}}
+        \caption{\label{fig:fit}Fit line to AoA }
+      \end{figure}
+
+\section{Experimental Performance}
+TBW
+%\subsection{Hydrostatics}
+%In order to verify our model, we need to know the hydrostatic forces in eq. \ref{eq:vert}:
+%\begin{equation}
+%F_G = m_g g
+%\end{equation}
+%\begin{equation}
+%F_B = g\rho \lbrace V_g [1 - \epsilon(P-P_0) + \beta_T(T-T_0)] + \Delta V_{b} \rbrace 
+%\end{equation}
+%
+%with
+%\begin{itemize}
+%\item Glider mass $m_g$ [kg]
+%\item Acceleration due to gravity $g$ [m/s$^2$]
+%\item Hull Compressability $\epsilon = 4.3*10^{-6} \frac{1}{dBar }$
+%\item Coeff. of Thermal Expansion $\beta_T = 36*10^{-6} \frac{1}{\text{deg C}}$
+%\item Pressure of surrounding fluid and Reference Pressure $P$ and $P_0$ [dbar]
+%\item Temperature  of surrounding fluid and Reference Temperature $T_0$ [deg C]
+%\item Density of surrounding fluid $\rho$ [kg/m$^3$]
+%\item Glider volume at atmospheric pressure $V_g$ [m$^3$]
+%\item Buoyancy change due to buoyancy engine $\Delta V_{b}$ [m$^3$]
+%\end{itemize}
+%
+
+
+
+
+
+
+\begin{thebibliography}{9}
+
+
+\bibitem{Newman:1977}
+  J. N. Newman,
+  \emph{Marine Hydrodynamics}
+  MIT Press, August 1977.
+
+\bibitem{Hoerner:1985}
+  Sighard F. Hoerner,
+  \emph{Fluid Dynamic Lift}.
+  Bakersfield, CA, 2nd Edition, 1985.
+
+\bibitem{Hoerner:1964}
+Sighard F. Hoerner,
+  \emph{Fluid Dynamic Drag}.
+  Bakersfield, CA, 2nd Edition, 1965.
+
+\bibitem{Merckelbach:2009}
+  L. Merckelbach, D. Smeed, and G. Griffiths,
+  \emph{Vertical Water Velocities from Underwater Gliders}.
+  Journal of Atmospheric and Oceanic Technology, 2009.
+\bibitem{Merckelbach:2010}
+  L. Merckelbach,
+  \emph{Improved algorithm for deadreckoning for Slocum gliders}.
+  January 29, 2010.
+
+\end{thebibliography}
+
+
+\end{document}
+
+

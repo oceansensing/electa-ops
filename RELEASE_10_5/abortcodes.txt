@@ -1,0 +1,15 @@
+// Copyright(c) 2006-2014, Teledyne Webb Research, ALL RIGHTS RESERVED
+/* abortcodes.txt
+   Numeric status codes for reasons why a mission might end.
+
+   2014-10-01 dpingal@teledyne.com   Pulled from mission_status.h, so we can publish as
+                                     documentation the part that users need to know.
+2016-02-04 lcooney@teledyne.com Added MS_ABORT_INVALID_GPS M#2113	
+2017-01-15 lcooney@teledyne.com Added MS_ABORT_NO_COMMS_TICKLE M#3336
+2017-08-31 mbrissette@teledyne.com Added MS_ABORT_EMERGENCY_BATTERY_ACTIVE M#3836
+2018-07-17 lcooney@teledyne.com Added MS_ABORT_SURFACE_BLOCKED, MS_ABORT_NO_TICKLE_ICE, MS_COMPLETED_NORMALLY_UNDER_ICE   M#1600
+*/
+
+// Values <= 0 represent running or completed mission status, not aborts
+
+/* Maintained in mission_status.h and parsed to here for documentation purposes */

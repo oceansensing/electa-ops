@@ -1,0 +1,77 @@
+async-timing.txt
+12-May-99 tc@DinkumSoftware.com 
+
+This document discusses the low level latencies at the driver level
+in the Webb Research Glider using MIT Odessy code.
+
+Asynchronous Events in the system:
+    3 motor drivers (roll, pitch, bouyancy)    3 "tasks"
+    These have an PITChore() interrupt task that reads the position ADs
+    and are responsible for stopping the motor when AD reaches desired
+    position.  If the motors go too far, the Glider can be damaged.
+    The motors also coast for a while after they are shut off.
+    See motor-setup.doc for all the details.
+
+    Pinger    2 "tasks"
+    The pinger does a double "ping" every 8 seconds, the time between
+    the first and 2nd ping represents depth.  The pulse width is 10ms,
+    Doug wants < 10ms jitter on the timing between 1st and 2nd pulses.
+    The 8 second pulse is done in a Real Time Clock chore which gets
+    called every 8 seconds.  The second ping is done from a PTCchore()
+
+    Watchdog: 1 "task"
+    Normally the COP tickle is driven from main line synchronous code.
+    Sometimes (typically under test) it is driven from a 1 second
+    real time clock interrupt.
+
+
+Current settings:
+    Worst case latency to a PIT/Chore:    100 milliseconds
+
+    PIT Base Interrupt Period:    10 milliseconds
+                                  glidhard.h:
+                                      #define PIT_PERIOD_IN_MICROSECS
+                                  glidhard.c:glider_init()
+                                      Does the setting
+
+
+    
+Justification:
+    All of the PITchore()'s attempt to lock the QSPI bus.  If they
+    fail, the simply quit and try again 10 milliseconds later.  They
+    would only fail, if they happen to interrupt someone in the main
+    line code who had the Qspi bus locked.
+
+    The current experimentally measured time thru synchronous
+    roll_motor_ctrl() [which reads the AD once] is 3.4 milliseconds
+    We'll use 4 ms as the execution time for all qspi transactions.
+    There are about 4 things on the "to do" list which will reduce this
+    time, but it's more conservative to use this as a design number.
+
+    So our worst case latency is:
+        Time for all of the syncronous main line QSPI devices to complete.
+        This is VERY conservative, odds are quite high that the
+        PIT chore will interrupt the main line code.
+        = 13 qspi devices * 4 millisec/device
+        = 52 milliseconds
+
+        PLUS
+        Time for all the motor PIT chores to execute
+        = 3 motor tasks * (4ms * 2)    ; motor worst case does AD read
+        = 24 ms                        ; and shift register write to stop
+        
+        PLUS
+        time for all the other "tasks" to execute
+        = 3 tasks * 4 ms/task     ; 2 pinger, 1 watchdog
+        = 12 ms
+
+        PLUS
+        the period of PIT interrupt
+        = 10 ms
+
+    Worst case latency = 52ms + 24ms + 12ms + 10ms
+                       = 98 ms
+
+    
+                
+        

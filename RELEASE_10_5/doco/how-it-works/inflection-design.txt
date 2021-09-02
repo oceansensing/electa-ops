@@ -1,0 +1,126 @@
+doco\inflection-design.txt
+
+13-May-00 tc@DinkumSoftware.com Initial
+15-May-00 tc@DinkumSoftware.com Changed +/- C_BATTPOS to delta > or < 0
+10-Jan-02 tc@DinkumSoftware.com No longer allow final inflections
+                                This was because behaviors no longer have
+                                any influence if they aren't active.
+                                They used to cause a final inflection and
+                                then go B_COMPLETE.
+
+This document describes how the glider is controlled during
+inflections.
+
+In May 00, field trials in Ashument demonstrated that we need
+very tight control of various glider motors during inflections.
+Clayton spent a lot of time understanding the physics, hopefully
+he'll add an explanation at the end of this document.  He specified
+the following actions during an inflection.
+
+
+INFLECTING UP (BETWEEN DIVE AND CLIMB):
+
+  IF climb CALLS FOR POSITIVE C_BATTPOS delta (c_battpos gets more positive)
+           
+                    _____
+    c_battpos _____|     |_______
+    
+                          _____
+    c_ballast_pumped  ___|     |_
+
+                          _____
+    (flip c_battroll) ___|     |_
+
+
+  IF CLIMB CALLS FOR NEGATIVE C_BATTPOS delta (c_battpos gets more negative)
+
+                          _____
+    c_ballast_pumped  ___|     |_________
+
+                          _____
+    (flip c_battroll) ___|     |_________
+
+                                   _____
+    c_battpos         ____________|     |_
+
+
+INFLECTIONING DOWN (BETWEEN CLIMB AND DIVE)
+
+  IF dive CALLS FOR NEGATIVE C_BATTPOS delta (c_battpos gets more negative)
+
+                    _____
+    c_battpos _____|     |___________
+    
+                          _____
+    (flip c_battroll) ___|     |_____
+
+                              _____
+    c_ballast_pumped  _______|     |_
+
+                             ^
+                             ballast starts when c_battroll crosses 0 deg
+                             note: we actually probably want it to start
+                                   when M_ROLL (the vehicle) crosses 0 deg,
+                                   but (a) it's easier to test in lab with
+                                   battery (b) more reliable measurement
+                                   in the field.  In practice vehicle does
+                                   not lag the battery much.
+
+
+  IF dive CALLS FOR POSITIVE C_BATTPOS delta (c_battpos gets more positive)
+
+                          _____
+    (flip c_battroll) ___|     |___________
+
+                              _____
+    c_ballast_pumped  _______|     |_______
+
+                                    _____
+    c_battpos         _____________|     |_
+
+                             ^
+                             ballast starts when c_battroll crosses 0 deg
+                             see note above
+
+
+Implementation:
+    dynamic_control() is made responsible for inflecting.
+    A new "command" is added to the command structure:
+        inflect_mode    IM_INFLECT_UP, IM_INFLECT_DOWN, IM_INFLECTION_NONE
+
+    This is along with the normal depth_mode(pitch), heading_mode(roll), and
+    speed_mode(bouyancy) commands.
+
+    Normally each behavior sets the depth/heading/speed_mode commands on every cycle.
+    layered_control() picks the top priority one and passes it along to
+    dynamic_control() which implements it.
+
+    inflect_mode is a little different.  A climb_to or dive_to behavior should set
+    this once at the beginning of it's behavior.  Any time dynamic_control()
+    sees inflect_mode, it takes complete control of generating C_BATTPOS, C_BATTROLL,
+    and C_BALLAST_PUMPED.
+
+    Arguments to dive-to/climb-to which specify whether to inflect at beginning
+    of behavior.  Under most circumstances, the default (to inflect at the beginning)
+    should NOT be overridden.  
+
+    dynamic_control(), on seeing inflect_mode,  enters a state machine that cycles
+    through the required steps.  It only needs to see inflect_mode set ONCE and then
+    it completes it's cycle regardless of any other commands.
+    
+    It is very important, that the behavior in the sequence generate the
+    appropriate command structure during the same cycle where inflect_mode is first
+    set.  dynamic_control() uses theses value as it's target, i.e. where all the motors
+    end up at the end of the inflection.
+    
+    In the past, dynamic_control used to read various "commanded" vehicle sensors
+    and directly generate C_BATTPOS, C_BATTROLL, and C_BALLAST_PUMPED.  There is
+    now an intermediate level of sensors:  DC_C_BATTPOS, DC_C_BATTROLL, DC_C_BALLAST_PUMPED.
+    The dynamic_control() code that used to generate C_xxx, now generates DC_C_xxxx.
+    
+    At the very end of dynamic_control, if we are NOT in an inflection ..
+      dynamic_control copies DC_C_xxx into C_xxx.
+
+    If we ARE in an inflection, we use DC_C_xxx as where we want to end up after the
+    inflection and generate our own C_xxx to achieve the above timing.
+
