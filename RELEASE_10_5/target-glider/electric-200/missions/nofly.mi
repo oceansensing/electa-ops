@@ -34,7 +34,7 @@ behavior: abend
     b_arg: samedepth_for(sec)                    -1 	# < 0 disables
     b_arg: stalled_for(sec)                      -1     # < 0 disables
     b_arg: leakdetect_sample_time(sec)           -1     # < 0 disables
-    b_arg: undervolts(volts)                      6   # < 0 disables
+    b_arg: undervolts(volts)                      10   # < 0 disables
     b_arg: vacuum_min(inHg)                       2.0   # MS_ABORT_VACUUM, M_VACUUM out of limits
     b_arg: vacuum_max(inHg)                      14.0
     b_arg: remaining_charge_min(%)             -1
